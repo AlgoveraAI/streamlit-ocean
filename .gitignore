@@ -8,3 +8,4 @@
 *.ipynb
 streamlit_wallet_connect.egg-info/
 *.idea
+.env
