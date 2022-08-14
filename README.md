@@ -1,6 +1,6 @@
 # 🌊 Streamlit Ocean component
 
-This repository contains the code behind the Streamlit Ocean component that you can use to interact with Web3 data markets from Streamlit apps.
+This repository contains the code behind Algovera's Streamlit Ocean component that you can use to interact with Web3 data markets from Streamlit apps.
 
 
 ## 🏗 Development
