@@ -4,9 +4,12 @@ import os
 
 from PIL import Image
 
-import matplotlib.pyplot as plt
 import numpy as np
 
+from wallet_connect import connect
+
+user_address = connect(label="connect_button")
+st.write(user_address[0])
 
 term = st.text_input("Search for an asset by name", "")
 did = st.text_input("Search for an asset by DID", "")
