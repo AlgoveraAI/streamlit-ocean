@@ -9,13 +9,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from wallet_connect import connect
-
+from web3 import Web3
 from ocean_lib.config import Config
 from ocean_lib.ocean.ocean import Ocean
 from ocean_lib.web3_internal.wallet import Wallet
 from ocean_lib.web3_internal.constants import ZERO_ADDRESS
 from ocean_lib.web3_internal.currency import pretty_ether_and_wei, to_wei
 
+
+# Ocean Search
+config = Config('./streamlit_ocean/config.ini')
+ocean = Ocean(config)
+# st.write(f"Ocean network: {ocean.config.network_url}")
 
 def search(term="", did_in="", address=""):
     """
@@ -53,12 +58,13 @@ def search(term="", did_in="", address=""):
             
             if address:
                 data_token = ocean.get_datatoken(data_token_address)
+                st.write(f'data_Token address is: {data_token_address}')
                 token_address = data_token.address
                 balances.append(pretty_ether_and_wei(data_token.balanceOf(address)))
             else:
                 balances.append(0)
             
-            img = Image.open('./wallet_connect/algovera-tile.png')
+            img = Image.open('./streamlit_ocean/algovera-tile.png')
 
             fig = plt.figure(figsize=(5,5))
             plt.axis("off")
@@ -124,20 +130,21 @@ def search(term="", did_in="", address=""):
     return results 
 
 
+# End Ocean Search
+
 user_address = connect(label="connect_button")
-st.write(user_address[0])
+address = Web3.toChecksumAddress(user_address[0])
+st.write(address)
 
 term = st.text_input("Search for an asset by name", "")
 did = st.text_input("Search for an asset by DID", "")
 
-did_out, image_out, balance_out = st.button(label="Search", on_click=search, args=[term, did, user_address])
-st.write(f"Asset DID: {did_out}")
-st.image(image_out)
-st.write(f"Balance at address {user_address}: {balance_out}")
+if st.button(label="Search"):
+    did_out, image_out, balance_out = search(term, did, address)
+    st.write(f"Asset DID: {did_out}")
+    st.image(image_out)
+    st.write(f"Balance at address {user_address}: {balance_out}")
 
-# Ocean Search
-config = Config('./wallet_connect/config.ini')
-ocean = Ocean(config)
 
 _ocean_data = components.declare_component("ocean_data", url="http://localhost:3001/")
 def ocean_data(label, did="", key=None):
