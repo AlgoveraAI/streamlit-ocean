@@ -1,4 +1,6 @@
 from ast import arg
+import re
+from unittest import result
 import streamlit.components.v1 as components
 import streamlit as st
 import os
@@ -56,13 +58,13 @@ def search(term="", did_in="", address=""):
             dids.append(did)
             chain = assets[i].services[0].service_endpoint
             
-            if address:
-                data_token = ocean.get_datatoken(data_token_address)
-                st.write(f'data_Token address is: {data_token_address}')
-                token_address = data_token.address
-                balances.append(pretty_ether_and_wei(data_token.balanceOf(address)))
-            else:
-                balances.append(0)
+            # if address:
+            #     data_token = ocean.get_datatoken(data_token_address)
+            #     st.write(f'data_Token address is: {data_token_address}')
+            #     token_address = data_token.address
+            #     balances.append(pretty_ether_and_wei(data_token.balanceOf(address)))
+            # else:
+            balances.append(0)
             
             img = Image.open('./streamlit_ocean/algovera-tile.png')
 
@@ -140,10 +142,10 @@ term = st.text_input("Search for an asset by name", "")
 did = st.text_input("Search for an asset by DID", "")
 
 if st.button(label="Search"):
-    did_out, image_out, balance_out = search(term, did, address)
-    st.write(f"Asset DID: {did_out}")
-    st.image(image_out)
-    st.write(f"Balance at address {user_address}: {balance_out}")
+    results = search(term, did, address)
+    st.write(f"Asset DID: {results[0][0]}")
+    st.image(results[0][1])
+    st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
 
 
 _ocean_data = components.declare_component("ocean_data", url="http://localhost:3001/")
