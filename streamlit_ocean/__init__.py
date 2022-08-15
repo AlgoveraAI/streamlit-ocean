@@ -138,14 +138,29 @@ user_address = connect(label="connect_button")
 address = Web3.toChecksumAddress(user_address[0])
 st.write(address)
 
-term = st.text_input("Search for an asset by name", "")
-did = st.text_input("Search for an asset by DID", "")
+# create two columns, one for buying dataset, the other for algorithm
+col1, col2 = st.columns(2)
+with col1:
+    st.header("Search & Buy Dataset")
+    term = st.text_input("Search for an asset by name", "")
+    did = st.text_input("Search for an asset by DID", "")
 
-if st.button(label="Search"):
-    results = search(term, did, address)
-    st.write(f"Asset DID: {results[0][0]}")
-    st.image(results[0][1])
-    st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
+    if st.button(label="Search"):
+        results = search(term, did, address)
+        st.write(f"Asset DID: {results[0][0]}")
+        st.image(results[0][1])
+        st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
+
+with col2:
+    st.header("Search & Buy Algorithm")
+    term2 = st.text_input("Search for an asset by name", "", key="term2")
+    did2 = st.text_input("Search for an asset by DID", "", key="did2")
+
+    if st.button(label="Search", key="button2"):
+        results2 = search(term2, did2, address)
+        st.write(f"Asset DID: {results2[0][0]}")
+        st.image(results2[0][1])
+        st.write(f"Balance at address {user_address[0]}: {results2[0][2]}")
 
 
 _ocean_data = components.declare_component("ocean_data", url="http://localhost:3001/")
