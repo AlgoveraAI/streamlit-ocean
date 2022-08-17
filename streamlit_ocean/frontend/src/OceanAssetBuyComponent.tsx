@@ -30,8 +30,7 @@ declare global {
     }
 }
 
-const pro: any = process.env.NODE_URI || configHelperNetworks[3].nodeUri
-const web3 = new Web3(pro)
+const web3 = new Web3(window.ethereum)
 
 const getTestConfig = async (web3: Web3) => {
   const config = new ConfigHelper().getConfig(await web3.eth.getChainId())
@@ -42,12 +41,13 @@ const getTestConfig = async (web3: Web3) => {
 async function buyAsset(did: string, userAddress: string) {
     const config: any = await getTestConfig(web3)
     console.log("config", config)
-    // const aquarius = new Aquarius(config.metadataCacheUri)
-    // const providerUrl = config.providerUri
-    // const datatoken = new Datatoken(web3)
-    // const DATATOKEN_AMOUNT = '1'
-    // const consumerETHBalance = await web3.eth.getBalance(userAddress)
-    // console.log(`Consumer ETH balance: ${consumerETHBalance}`)
+    const aquarius = new Aquarius(config.metadataCacheUri)
+    const providerUrl = config.providerUri
+    const datatoken = new Datatoken(web3)
+    const DATATOKEN_AMOUNT = '1'
+    console.log("userAddress", userAddress[0])
+    const consumerETHBalance = await web3.eth.getBalance(userAddress[0])
+    console.log(`Consumer ETH balance: ${consumerETHBalance}`)
     // let consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance before swap: ${consumerOCEANBalance}`)
     // let consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
@@ -150,7 +150,7 @@ class BuyAsset extends StreamlitComponentBase<State> {
             onFocus={this._onFocus}
             onBlur={this._onBlur}
           >
-            Search Asset
+            Buy Asset
           </button>
         </span>
       )
