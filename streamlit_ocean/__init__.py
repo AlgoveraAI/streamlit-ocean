@@ -135,8 +135,9 @@ def search(term="", did_in="", address=""):
 # End Ocean Search
 
 user_address = connect(label="connect_button")
-address = Web3.toChecksumAddress(user_address[0])
-st.write(address)
+if user_address[0] is not "n":
+    address = Web3.toChecksumAddress(user_address[0])
+    st.write(address)
 
 # create two columns, one for buying dataset, the other for algorithm
 col1, col2 = st.columns(2)
