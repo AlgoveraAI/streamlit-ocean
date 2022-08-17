@@ -163,14 +163,14 @@ with col2:
         st.write(f"Balance at address {user_address[0]}: {results2[0][2]}")
 
 
-_ocean_data = components.declare_component("ocean_data", url="http://localhost:3001/")
-def ocean_data(label, did="", key=None):
+_ocean_data = components.declare_component("ocean_data", url="http://localhost:3002/")
+def ocean_data(label, did="", key=None, user_address=None):
     """
     Wallet Connect component.
     """
-    return _ocean_data(label=label, did=did, default="not", key=key)
+    return _ocean_data(label=label, did=did, default="not", key=key, user_address=user_address)
 
-ocean_data_button = ocean_data(label="ocean", did=did)
+ocean_data_button = ocean_data(label="ocean", did=did, user_address=user_address)
 st.write(f"Ocean data for {ocean_data_button}")
 
 
