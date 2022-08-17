@@ -5,9 +5,22 @@ import {
 } from "streamlit-component-lib"
 import React, { ReactNode } from "react"
 
+import Web3  from "web3"
+
+import {
+  Aquarius,
+  balance,
+  configHelperNetworks,
+  ConfigHelper,
+  Config,
+  Datatoken,
+  ProviderFees,
+  ProviderInstance,
+} from '@oceanprotocol/lib'
+
   
 interface State {
-    assetObject: string
+    transaction: string
     isFocused: boolean
 }
   
@@ -17,19 +30,91 @@ declare global {
     }
 }
 
-function buyAsset(did: string, userAddress: string) {
-    const datatoken = new Datatoken(web3)
-    const DATATOKEN_AMOUNT = '1'
-    const consumerETHBalance = await web3.eth.getBalance(userAddress)
+const pro: any = process.env.NODE_URI || configHelperNetworks[3].nodeUri
+const web3 = new Web3(pro)
 
-    return did
+const getTestConfig = async (web3: Web3) => {
+  const config = new ConfigHelper().getConfig(await web3.eth.getChainId())
+  config.providerUri = process.env.PROVIDER_URL || config.providerUri
+  return config
+}
+
+async function buyAsset(did: string, userAddress: string) {
+    const config: any = await getTestConfig(web3)
+    console.log("config", config)
+    // const aquarius = new Aquarius(config.metadataCacheUri)
+    // const providerUrl = config.providerUri
+    // const datatoken = new Datatoken(web3)
+    // const DATATOKEN_AMOUNT = '1'
+    // const consumerETHBalance = await web3.eth.getBalance(userAddress)
+    // console.log(`Consumer ETH balance: ${consumerETHBalance}`)
+    // let consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
+    // console.log(`Consumer OCEAN balance before swap: ${consumerOCEANBalance}`)
+    // let consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
+    // console.log(`Consumer ${FRE_NFT_SYMBOL} balance before swap: ${consumerDTBalance}`)
+
+    // await fixedRate.buyDT(userAddress, freId, '1', '2')
+
+    // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
+    // console.log(`Consumer OCEAN balance after swap: ${consumerOCEANBalance}`)
+    // consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
+    // console.log(`Consumer ${FRE_NFT_SYMBOL} balance after swap: ${consumerDTBalance}`)
+
+    // const resolvedDDO = await aquarius.waitForAqua(DDO.id)
+    // assert(resolvedDDO, 'Cannot fetch DDO from Aquarius')
+
+    // const initializeData = await ProviderInstance.initialize(
+    //   resolvedDDO.id,
+    //   resolvedDDO.services[0].id,
+    //   0,
+    //   userAddress,
+    //   providerUrl
+    // )
+
+    // const providerFees: ProviderFees = {
+    //   providerFeeAddress: initializeData.providerFee.providerFeeAddress,
+    //   providerFeeToken: initializeData.providerFee.providerFeeToken,
+    //   providerFeeAmount: initializeData.providerFee.providerFeeAmount,
+    //   v: initializeData.providerFee.v,
+    //   r: initializeData.providerFee.r,
+    //   s: initializeData.providerFee.s,
+    //   providerData: initializeData.providerFee.providerData,
+    //   validUntil: initializeData.providerFee.validUntil
+    // }
+
+    // const tx = await datatoken.startOrder(
+    //   freDatatokenAddress,
+    //   userAddress,
+    //   userAddress,
+    //   0,
+    //   providerFees
+    // )
+
+    // const downloadURL = await ProviderInstance.getDownloadUrl(
+    //   DDO.id,
+    //   userAddress,
+    //   DDO.services[0].id,
+    //   0,
+    //   tx.transactionHash,
+    //   providerUrl,
+    //   web3
+    // )
+
+    // console.log(`Download URL: ${downloadURL}`)
+
+    // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
+    // console.log(`Consumer OCEAN balance after order: ${consumerOCEANBalance}`)
+    // consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
+    // console.log(`Consumer ${FRE_NFT_SYMBOL} balance after order: ${consumerDTBalance}`)
+
+    // return did
 }
 /**
    * This is a React-based component template. The `render()` function is called
    * automatically when your component should be re-rendered.
 */
 class BuyAsset extends StreamlitComponentBase<State> {
-    public state = { assetObject: "not", isFocused: false }
+    public state = { transaction: "No transaction", isFocused: false }
   
     public render = (): ReactNode => {
       // Arguments that are passed to the plugin in Python are accessible
@@ -73,10 +158,10 @@ class BuyAsset extends StreamlitComponentBase<State> {
   
     /** Click handler for our "Click Me!" button. */
     private onClicked = async (): Promise<void> => {
-      const asset = await buyAsset(this.props.args["did"])
+      const transaction: any = await buyAsset(this.props.args["did"], this.props.args["user_address"])
       this.setState(
-        () => ({ assetObject: asset }),
-        () => Streamlit.setComponentValue(this.state.assetObject)
+        () => ({ transaction: transaction }),
+        () => Streamlit.setComponentValue(this.state.transaction)
       )
       // Increment state.numClicks, and pass the new value back to
       // Streamlit via `Streamlit.setComponentValue`.
