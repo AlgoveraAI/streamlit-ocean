@@ -18,7 +18,6 @@ import {
   ProviderInstance,
 } from '@oceanprotocol/lib'
 
-  
 interface State {
     transaction: string
     isFocused: boolean
@@ -48,16 +47,22 @@ async function buyAsset(did: string, userAddress: string) {
     console.log("userAddress", userAddress[0])
     const consumerETHBalance = await web3.eth.getBalance(userAddress[0])
     console.log(`Consumer ETH balance: ${consumerETHBalance}`)
-    // let consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
-    // console.log(`Consumer OCEAN balance before swap: ${consumerOCEANBalance}`)
-    // let consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
-    // console.log(`Consumer ${FRE_NFT_SYMBOL} balance before swap: ${consumerDTBalance}`)
+    let consumerOCEANBalance = await balance(web3, config.oceanTokenAddress, userAddress[0])
+    console.log(`Consumer OCEAN balance before swap: ${consumerOCEANBalance}`)
+    console.log('Did', did)
+    const dt = await aquarius.resolve(did)
+    console.log("dt", dt)
+    const dtAddress = dt.datatokens[0].address
+    console.log("dtAddress", dtAddress)
+    // let consumerDTBalance = await web3.eth.getBalance(userAddress[0], )
+    let consumerDTBalance = await balance(web3, dtAddress, userAddress[0])
+    console.log(`Consumer ${dt.datatokens[0].symbol} balance before swap: ${consumerDTBalance}`)
 
     // await fixedRate.buyDT(userAddress, freId, '1', '2')
 
     // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance after swap: ${consumerOCEANBalance}`)
-    // consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
+    // consumerDTBalance = await balance(web3, dtAddress, userAddress)
     // console.log(`Consumer ${FRE_NFT_SYMBOL} balance after swap: ${consumerDTBalance}`)
 
     // const resolvedDDO = await aquarius.waitForAqua(DDO.id)
@@ -83,7 +88,7 @@ async function buyAsset(did: string, userAddress: string) {
     // }
 
     // const tx = await datatoken.startOrder(
-    //   freDatatokenAddress,
+    //   dtAddress,
     //   userAddress,
     //   userAddress,
     //   0,
@@ -104,7 +109,7 @@ async function buyAsset(did: string, userAddress: string) {
 
     // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance after order: ${consumerOCEANBalance}`)
-    // consumerDTBalance = await balance(web3, freDatatokenAddress, userAddress)
+    // consumerDTBalance = await balance(web3, dtAddress, userAddress)
     // console.log(`Consumer ${FRE_NFT_SYMBOL} balance after order: ${consumerDTBalance}`)
 
     // return did
