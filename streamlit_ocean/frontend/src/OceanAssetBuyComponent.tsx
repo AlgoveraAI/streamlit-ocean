@@ -11,12 +11,74 @@ import {
   Aquarius,
   balance,
   configHelperNetworks,
+  FixedRateExchange,
   ConfigHelper,
   Config,
   Datatoken,
   ProviderFees,
   ProviderInstance,
 } from '@oceanprotocol/lib'
+
+var axios = require('axios');
+
+async function query(datatokenAddress: string) {
+  const query = `{
+    token(id:"${datatokenAddress}", subgraphError: deny){
+      id
+      symbol
+      nft {
+        name
+        symbol
+        address
+      }
+      name
+      symbol
+      cap
+      isDatatoken
+      holderCount
+      orderCount
+      orders(skip:0,first:1){
+        amount
+        serviceIndex
+        payer {
+          id
+        }
+        consumer{
+          id
+        }
+        estimatedUSDValue
+        lastPriceToken
+        lastPriceValue
+      }
+    }
+    fixedRateExchanges(subgraphError:deny){
+      id
+      price
+      active
+    }
+  }`
+  
+  const baseUrl = "https://v4.subgraph.rinkeby.oceanprotocol.com"
+  const route = "/subgraphs/name/oceanprotocol/ocean-subgraph"
+  
+  const url = `${baseUrl}${route}`
+  
+  var config = {
+    method: 'post',
+    url: url,
+    headers: { "Content-Type": "application/json" },
+    data: JSON.stringify({ "query": query })
+  };
+  
+  var r = axios(config)
+    .then(function (response: { data: any; }) {
+      console.log(JSON.stringify(response.data.data));
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+  return r
+}
 
 interface State {
     transaction: string
@@ -57,8 +119,16 @@ async function buyAsset(did: string, userAddress: string) {
     // let consumerDTBalance = await web3.eth.getBalance(userAddress[0], )
     let consumerDTBalance = await balance(web3, dtAddress, userAddress[0])
     console.log(`Consumer ${dt.datatokens[0].symbol} balance before swap: ${consumerDTBalance}`)
-
-    // await fixedRate.buyDT(userAddress, freId, '1', '2')
+    const r: any = await query(dtAddress)
+    console.log("r", r)
+    // console.log(r.data.fixedRateExchanges)
+    const fixedRate = new FixedRateExchange(web3, dtAddress)
+    const oceanAmount = await (
+      await fixedRate.calcBaseInGivenOutDT("0x65ee19cd86de140fe08bfd5d51e62fe53e96358f-0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1')
+    ).baseTokenAmount
+    console.log(`Ocean amount: ${oceanAmount}`)
+    // await fixedRate.buyDT(userAddress[0], "0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1', '2')
+    // console.log("oceanAmount", oceanAmount)
 
     // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance after swap: ${consumerOCEANBalance}`)
