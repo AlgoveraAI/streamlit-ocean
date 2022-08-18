@@ -105,7 +105,7 @@ def search(term="", did_in="", address=""):
         if address:
             data_token = ocean.get_datatoken(asset.datatokens[0]["address"])
             token_address = data_token.address
-            balances.append(pretty_ether_and_wei(data_token.balanceOf(address)))
+            balances.append(pretty_ether_and_wei(data_token.balanceOf(token_address)))
         else:
             balances.append(0)
         
@@ -133,7 +133,7 @@ def search(term="", did_in="", address=""):
 
 
 # End Ocean Search
-
+results = None
 user_address = connect(label="connect_button")
 if user_address[0] is not "n":
     address = Web3.toChecksumAddress(user_address[0])
@@ -171,7 +171,8 @@ def ocean_data(label, did="", key=None, user_address=None):
     """
     return _ocean_data(label=label, did=did, default="not", key=key, user_address=user_address)
 
-ocean_data_button = ocean_data(label="ocean", did=did, user_address=user_address)
-st.write(f"Ocean data for {ocean_data_button}")
+if results:
+    ocean_data_button = ocean_data(label="ocean", did=results[0][0], user_address=user_address)
+    st.write(f"Ocean data for {ocean_data_button}")
 
 
