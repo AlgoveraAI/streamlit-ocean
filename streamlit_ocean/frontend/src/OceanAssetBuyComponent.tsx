@@ -18,6 +18,12 @@ import {
   Datatoken,
   ProviderFees,
   ProviderInstance,
+  getFreOrderParams,
+  FreCreationParams,
+  NftFactory,
+  NftCreateData,
+  Erc20CreateParams,
+  ZERO_ADDRESS,
 } from '@oceanprotocol/lib'
 
 var axios = require('axios');
@@ -121,21 +127,71 @@ async function buyAsset(did: string, userAddress: string) {
     console.log("dt", dt)
     const dtAddress = dt.datatokens[0].address
     console.log("dtAddress", dtAddress)
+    console.log("dt.datatokens[0]" , dt.datatokens[0])
     // let consumerDTBalance = await web3.eth.getBalance(userAddress[0], )
     let consumerDTBalance = await balance(web3, dtAddress, userAddress[0])
     console.log(`Consumer ${dt.datatokens[0].symbol} balance before swap: ${consumerDTBalance}`)
     const r: any = await query(dtAddress)
     console.log("r", r)
     // console.log(r.data.fixedRateExchanges)
-    await approve(web3, userAddress[0], "0x8967bcf84170c91b0d24d4302c2376283b0b3a07", "0x65Ee19cd86dE140fE08Bfd5d51e62Fe53e96358f", '100')
+    const freAddressRinkeby = config.fixedRateExchangeAddress
+    console.log("config freAddressRinkeby", config.fixedRateExchangeAddress)
+    const oceanAddressRinkeby = config.oceanTokenAddress
+    await approve(web3, userAddress[0], oceanAddressRinkeby, freAddressRinkeby, '100')
 
-    // const fixedRate = new FixedRateExchange(web3, "0x65Ee19cd86dE140fE08Bfd5d51e62Fe53e96358f")
-    // console.log(fixedRate)
+    const fixedRate = new FixedRateExchange(web3, freAddressRinkeby)
+    console.log(fixedRate)
+    // const freContractParams = await getFreOrderParams(web3, '1')
     // const oceanAmount = await (
-    //   await fixedRate.calcBaseInGivenOutDT("0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1')
+    //   await fixedRate.calcBaseInGivenOutDT(`${freAddressRinkeby}-${dtAddress}`, '1')
     // ).baseTokenAmount
     // console.log(`Ocean amount: ${oceanAmount}`)
-    // await fixedRate.buyDT(userAddress[0], "0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1', '2')
+    const freParams: FreCreationParams = {
+      fixedRateAddress: config.fixedRateExchangeAddress,
+      baseTokenAddress: config.oceanTokenAddress,
+      owner: dt.event.from,
+      marketFeeCollector: dt.event.from,
+      baseTokenDecimals: 18,
+      datatokenDecimals: 18,
+      fixedRate: '1',
+      marketFee: '0.001',
+      withMint: false
+    }
+    console.log("freParams", freParams)
+    const factory = new NftFactory(config.erc721FactoryAddress, web3)
+    
+    const nftParams: NftCreateData = {
+      name: dt.nft.name,
+      symbol: dt.nft.symbol,
+      templateIndex: 1,
+      tokenURI: '',
+      transferable: true,
+      owner: dt.event.from
+    }
+
+    const erc20Params: Erc20CreateParams = {
+      templateIndex: 1,
+      cap: '100000',
+      feeAmount: '0',
+      paymentCollector: ZERO_ADDRESS,
+      feeToken: ZERO_ADDRESS,
+      minter: dt.event.from,
+      mpFeeAddress: ZERO_ADDRESS
+    }
+
+    const tx = await factory.createNftErc20WithFixedRate(
+      dt.event.from,
+      nftParams,
+      erc20Params,
+      freParams
+    )
+    console.log("tx", tx)
+    // const freNftAddress = tx.events.NFTCreated.returnValues[0]
+    // const freDatatokenAddress = tx.events.TokenCreated.returnValues[0]
+    // const freAddress = tx.events.NewFixedRate.returnValues.exchangeContract
+    // const freId = tx.events.NewFixedRate.returnValues.exchangeId
+
+    // await fixedRate.buyDT(userAddress[0], "0", '1', '10')
 
     // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance after swap: ${consumerOCEANBalance}`)

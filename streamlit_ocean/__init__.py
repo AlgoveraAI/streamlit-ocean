@@ -164,7 +164,7 @@ with col2:
         st.write(f"Balance at address {user_address[0]}: {results2[0][2]}")
 
 
-_ocean_data = components.declare_component("ocean_data", url="http://localhost:3003/")
+_ocean_data = components.declare_component("ocean_data", url="http://localhost:3002/")
 def ocean_data(label, did="", key=None, user_address=None):
     """
     Wallet Connect component.
