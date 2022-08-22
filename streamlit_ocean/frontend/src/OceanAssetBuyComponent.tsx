@@ -10,6 +10,7 @@ import Web3  from "web3"
 import {
   Aquarius,
   balance,
+  approve,
   configHelperNetworks,
   FixedRateExchange,
   ConfigHelper,
@@ -100,6 +101,10 @@ const getTestConfig = async (web3: Web3) => {
 }
 
 async function buyAsset(did: string, userAddress: string) {
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts',
+    });
+    console.log("accounts", accounts)
     const config: any = await getTestConfig(web3)
     console.log("config", config)
     const aquarius = new Aquarius(config.metadataCacheUri)
@@ -122,13 +127,15 @@ async function buyAsset(did: string, userAddress: string) {
     const r: any = await query(dtAddress)
     console.log("r", r)
     // console.log(r.data.fixedRateExchanges)
-    const fixedRate = new FixedRateExchange(web3, dtAddress)
-    const oceanAmount = await (
-      await fixedRate.calcBaseInGivenOutDT("0x65ee19cd86de140fe08bfd5d51e62fe53e96358f-0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1')
-    ).baseTokenAmount
-    console.log(`Ocean amount: ${oceanAmount}`)
+    await approve(web3, userAddress[0], "0x8967bcf84170c91b0d24d4302c2376283b0b3a07", "0x65Ee19cd86dE140fE08Bfd5d51e62Fe53e96358f", '100')
+
+    // const fixedRate = new FixedRateExchange(web3, "0x65Ee19cd86dE140fE08Bfd5d51e62Fe53e96358f")
+    // console.log(fixedRate)
+    // const oceanAmount = await (
+    //   await fixedRate.calcBaseInGivenOutDT("0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1')
+    // ).baseTokenAmount
+    // console.log(`Ocean amount: ${oceanAmount}`)
     // await fixedRate.buyDT(userAddress[0], "0x00344ca3524adda1a0b331585d2bf6f759d4a4014dc6476c3c55176e8e4b2ce2", '1', '2')
-    // console.log("oceanAmount", oceanAmount)
 
     // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance after swap: ${consumerOCEANBalance}`)
