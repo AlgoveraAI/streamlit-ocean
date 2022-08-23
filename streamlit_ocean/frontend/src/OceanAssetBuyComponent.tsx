@@ -151,7 +151,6 @@ async function buyAsset(did: string, userAddress: string) {
     const freAddressRinkeby = config.fixedRateExchangeAddress
     console.log("config freAddressRinkeby", config.fixedRateExchangeAddress)
     const oceanAddressRinkeby = config.oceanTokenAddress
-    const txApprove = await approve(web3, userAddress[0], oceanAddressRinkeby, freAddressRinkeby, '100')
 
     const fixedRate = new FixedRateExchange(web3, freAddressRinkeby)
     fixedRate.oceanAddress = oceanAddressRinkeby
@@ -205,6 +204,9 @@ async function buyAsset(did: string, userAddress: string) {
       
       const exchangeId = await fixedRate.generateExchangeId(config.oceanTokenAddress, dtAddress) // previously contracts.daiAddress
       console.log("exchangeId", exchangeId)
+      const exchangeIds = await fixedRate.getExchanges()
+      console.log("All exchangeIds", exchangeIds)
+      console.log(exchangeIds.includes(exchangeId))
 
       const dtSupply = await fixedRate.getDTSupply(exchangeId)
       console.log("dtSupply", dtSupply)
@@ -216,11 +218,13 @@ async function buyAsset(did: string, userAddress: string) {
       const amountBtOut = await fixedRate.getAmountBTOut(exchangeId, '100')
       console.log("amountBtOut", amountBtOut)
 
+      console.log("Awaiting active fre", await fixedRate.isActive(exchangeId))
 
+      const txApprove = await approve(web3, userAddress[0], oceanAddressRinkeby, fixedRate.fixedRateAddress, '100')
+      console.log("txApprove", txApprove)
 
-
-      // const tx = await fixedRate.buyDT(userAddress[0], exchangeId, '1', '100')
-      // console.log("tx", tx)
+      const tx = await fixedRate.buyDT(userAddress[0], exchangeId, '1', '100')
+      console.log("tx", tx)
 
       // const freParams: any = {
       //   exchangeContract: config.fixedRateExchangeAddress,
