@@ -10,8 +10,12 @@ import React, { ReactNode } from "react"
 import Web3  from "web3"
 
 import {
+  approveWei,
   Aquarius,
   ConfigHelper,
+  ConsumeMarketFee,
+  Datatoken,
+  ProviderComputeInitialize,
   ProviderInstance,
  } from "@oceanprotocol/lib"
   
@@ -34,7 +38,57 @@ const getTestConfig = async (web3: Web3) => {
   return config
 }
 
+let datatoken: Datatoken
+
+async function handleOrder(
+  order: any,
+  datatokenAddress: string,
+  payerAccount: string,
+  consumerAccount: string,
+  serviceIndex: number,
+  consumeMarkerFee?: ConsumeMarketFee
+) {
+  /* We do have 3 possible situations:
+     - have validOrder and no providerFees -> then order is valid, providerFees are valid, just use it in startCompute
+     - have validOrder and providerFees -> then order is valid but providerFees are not valid, we need to call reuseOrder and pay only providerFees
+     - no validOrder -> we need to call startOrder, to pay 1 DT & providerFees
+  */
+  if (order.providerFee && order.providerFee.providerFeeAmount) {
+    await approveWei(
+      web3,
+      payerAccount,
+      order.providerFee.providerFeeToken,
+      datatokenAddress,
+      order.providerFee.providerFeeAmount
+    )
+  }
+  if (order.validOrder) {
+    if (!order.providerFee) return order.validOrder
+    const tx = await datatoken.reuseOrder(
+      datatokenAddress,
+      payerAccount,
+      order.validOrder,
+      order.providerFee
+    )
+    return tx.transactionHash
+  }
+  const tx = await datatoken.startOrder(
+    datatokenAddress,
+    payerAccount,
+    consumerAccount,
+    serviceIndex,
+    order.providerFee,
+    consumeMarkerFee
+  )
+  return tx.transactionHash
+}
+
 async function runCompute(dataDid: string, algoDid: string , userAddress: string) {
+  const accounts = await window.ethereum.request({
+    method: 'eth_requestAccounts',
+  });
+  console.log("accounts", accounts)
+  const consumerAccount = accounts[0]
 
   const config: any = await getTestConfig(web3)
   console.log("config", config)
@@ -47,40 +101,50 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   const aquarius = new Aquarius(config.metadataCacheUri)
   console.log("Data DID", dataDid)
   console.log("Algo DID", algoDid)
-  // const resolvedDataDDO = await aquarius.waitForAqua(dataDid);
-  // console.log("resolvedDataDDO", resolvedDataDDO)
+  const resolvedDdoWith1mTimeout = await aquarius.waitForAqua(dataDid);
+  const resolvedAlgoDdoWith1mTimeout = await aquarius.waitForAqua(algoDid);
+  console.log("resolvedDataDDO", resolvedDdoWith1mTimeout)
+  console.log("resolvedAlgoDDO", resolvedAlgoDdoWith1mTimeout)
 
-  // const assets: ComputeAsset[] = [
-  //   {
-  //     documentId: resolvedDdoWith1mTimeout.id,
-  //     serviceId: resolvedDdoWith1mTimeout.services[0].id
-  //   }
-  // ]
-  // const dtAddressArray = [resolvedDdoWith1mTimeout.services[0].datatokenAddress]
-  // const algo: ComputeAlgorithm = {
-  //   documentId: resolvedAlgoDdoWith1mTimeout.id,
-  //   serviceId: resolvedAlgoDdoWith1mTimeout.services[0].id
-  // }
+  const assets: any[] = [
+    {
+      documentId: resolvedDdoWith1mTimeout.id,
+      serviceId: resolvedDdoWith1mTimeout.services[0].id
+    }
+  ]
+  console.log("assets", assets)
+  const dtAddressArray = [resolvedDdoWith1mTimeout.services[0].datatokenAddress]
+  console.log("dtAddressArray", dtAddressArray)
+  const algo: any = {
+    documentId: resolvedAlgoDdoWith1mTimeout.id,
+    serviceId: resolvedAlgoDdoWith1mTimeout.services[0].id
+  }
+  console.log("algo", algo)
+  const mytime = new Date()
+  const computeMinutes = 1
+  mytime.setMinutes(mytime.getMinutes() + computeMinutes)
+  let computeValidUntil = Math.floor(mytime.getTime() / 1000)
+  if (computeEnv !== undefined) {
+  const providerInitializeComputeResults = await ProviderInstance.initializeCompute(
+    assets,
+    algo,
+    computeEnv.id,
+    computeValidUntil,
+    providerUrl,
+    consumerAccount
+  )
+  console.log("providerInitializeComputeResults", providerInitializeComputeResults)
 
-  // providerInitializeComputeResults = await ProviderInstance.initializeCompute(
-  //   assets,
-  //   algo,
-  //   computeEnv.id,
-  //   computeValidUntil,
-  //   providerUrl,
-  //   consumerAccount
-  // )
-  // assert(
-  //   !('error' in providerInitializeComputeResults.algorithm),
-  //   'Cannot order algorithm'
-  // )
-  // algo.transferTxId = await handleOrder(
-  //   providerInitializeComputeResults.algorithm,
-  //   resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
-  //   consumerAccount,
-  //   computeEnv.consumerAddress,
-  //   0
-  // )
+  algo.transferTxId = await handleOrder(
+    providerInitializeComputeResults.algorithm,
+    resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
+    consumerAccount,
+    computeEnv.consumerAddress,
+    0
+  )
+
+  console.log("algo.transferTxId", algo.transferTxId)
+
   // for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
   //   assets[i].transferTxId = await handleOrder(
   //     providerInitializeComputeResults.datasets[i],
@@ -102,6 +166,8 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   // freeEnvAlgoTxId = algo.transferTxId
   // assert(computeJobs, 'Cannot start compute job')
   // computeJobId = computeJobs[0].jobId
+  }
+
 }
     
   /**
