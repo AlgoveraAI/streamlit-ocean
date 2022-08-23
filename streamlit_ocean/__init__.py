@@ -161,3 +161,6 @@ if results:
     st.write(f"Ocean data for {ocean_data_button}")
 
 
+data_did = st.text_input("Data DID: ", "")
+algo_did = st.text_input("Algorithm DID: ", "")
+st.button("Run C2D")
