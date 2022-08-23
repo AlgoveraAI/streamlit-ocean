@@ -38,7 +38,7 @@ const getTestConfig = async (web3: Web3) => {
   return config
 }
 
-let datatoken: Datatoken
+const datatoken = new Datatoken(web3)
 
 async function handleOrder(
   order: any,
@@ -134,6 +134,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
     consumerAccount
   )
   console.log("providerInitializeComputeResults", providerInitializeComputeResults)
+  console.log(datatoken.startOrder)
 
   algo.transferTxId = await handleOrder(
     providerInitializeComputeResults.algorithm,
@@ -145,35 +146,35 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
 
   console.log("algo.transferTxId", algo.transferTxId)
 
-  if (providerInitializeComputeResults.datasets !== undefined) {
-  for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
-    assets[i].transferTxId = await handleOrder(
-      providerInitializeComputeResults.datasets[i],
-      dtAddressArray[i],
-      consumerAccount,
-      computeEnv.consumerAddress,
-      0
-    )
-  }
+  // if (providerInitializeComputeResults.datasets !== undefined) {
+  // for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
+  //   assets[i].transferTxId = await handleOrder(
+  //     providerInitializeComputeResults.datasets[i],
+  //     dtAddressArray[i],
+  //     consumerAccount,
+  //     computeEnv.consumerAddress,
+  //     0
+  //   )
+  // }
 
-  const computeJobs: any = await ProviderInstance.computeStart(
-    providerUrl,
-    web3,
-    consumerAccount,
-    computeEnv.id,
-    assets[0],
-    algo
-  )
-  console.log("computeJobs", computeJobs)
+  // const computeJobs: any = await ProviderInstance.computeStart(
+  //   providerUrl,
+  //   web3,
+  //   consumerAccount,
+  //   computeEnv.id,
+  //   assets[0],
+  //   algo
+  // )
+  // console.log("computeJobs", computeJobs)
 
-  const freeEnvDatasetTxId = assets[0].transferTxId
-  console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
-  const freeEnvAlgoTxId = algo.transferTxId
-  console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
-  const computeJobId = computeJobs[0].jobId
+  // const freeEnvDatasetTxId = assets[0].transferTxId
+  // console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
+  // const freeEnvAlgoTxId = algo.transferTxId
+  // console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
+  // const computeJobId = computeJobs[0].jobId
 
-  console.log("computeJobId", computeJobId)
-  }
+  // console.log("computeJobId", computeJobId)
+  // }
 
   }
 
