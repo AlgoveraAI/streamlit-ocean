@@ -6,9 +6,16 @@ import {
     withStreamlitConnection,
 } from "streamlit-component-lib"
 import React, { ReactNode } from "react"
+
+import Web3  from "web3"
+
+import { 
+  ProviderInstance,
+  ConfigHelper
+ } from "@oceanprotocol/lib"
   
 interface State {
-    walletAddress: string
+    computeResult: any
     isFocused: boolean
 }
   
@@ -18,62 +25,76 @@ declare global {
     }
 }
 
+const web3 = new Web3(window.ethereum)
+
+const getTestConfig = async (web3: Web3) => {
+  const config = new ConfigHelper().getConfig(await web3.eth.getChainId())
+  config.providerUri = process.env.PROVIDER_URL || config.providerUri
+  return config
+}
+
 async function runCompute(dataDid: string, algoDid: string , userAddress: string) {
+
+  const config: any = await getTestConfig(web3)
+  console.log("config", config)
+  const providerUrl = config.providerUri
+
+  const computeEnvs = await ProviderInstance.getComputeEnvironments(providerUrl)
   const computeEnv = computeEnvs.find((ce) => ce.priceMin === 0)
-  assert(computeEnv, 'Cannot find the free compute env')
+  console.log("computeEnv", computeEnv)
 
-  const assets: ComputeAsset[] = [
-    {
-      documentId: resolvedDdoWith1mTimeout.id,
-      serviceId: resolvedDdoWith1mTimeout.services[0].id
-    }
-  ]
-  const dtAddressArray = [resolvedDdoWith1mTimeout.services[0].datatokenAddress]
-  const algo: ComputeAlgorithm = {
-    documentId: resolvedAlgoDdoWith1mTimeout.id,
-    serviceId: resolvedAlgoDdoWith1mTimeout.services[0].id
-  }
+  // const assets: ComputeAsset[] = [
+  //   {
+  //     documentId: resolvedDdoWith1mTimeout.id,
+  //     serviceId: resolvedDdoWith1mTimeout.services[0].id
+  //   }
+  // ]
+  // const dtAddressArray = [resolvedDdoWith1mTimeout.services[0].datatokenAddress]
+  // const algo: ComputeAlgorithm = {
+  //   documentId: resolvedAlgoDdoWith1mTimeout.id,
+  //   serviceId: resolvedAlgoDdoWith1mTimeout.services[0].id
+  // }
 
-  providerInitializeComputeResults = await ProviderInstance.initializeCompute(
-    assets,
-    algo,
-    computeEnv.id,
-    computeValidUntil,
-    providerUrl,
-    consumerAccount
-  )
-  assert(
-    !('error' in providerInitializeComputeResults.algorithm),
-    'Cannot order algorithm'
-  )
-  algo.transferTxId = await handleOrder(
-    providerInitializeComputeResults.algorithm,
-    resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
-    consumerAccount,
-    computeEnv.consumerAddress,
-    0
-  )
-  for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
-    assets[i].transferTxId = await handleOrder(
-      providerInitializeComputeResults.datasets[i],
-      dtAddressArray[i],
-      consumerAccount,
-      computeEnv.consumerAddress,
-      0
-    )
-  }
-  const computeJobs = await ProviderInstance.computeStart(
-    providerUrl,
-    web3,
-    consumerAccount,
-    computeEnv.id,
-    assets[0],
-    algo
-  )
-  freeEnvDatasetTxId = assets[0].transferTxId
-  freeEnvAlgoTxId = algo.transferTxId
-  assert(computeJobs, 'Cannot start compute job')
-  computeJobId = computeJobs[0].jobId
+  // providerInitializeComputeResults = await ProviderInstance.initializeCompute(
+  //   assets,
+  //   algo,
+  //   computeEnv.id,
+  //   computeValidUntil,
+  //   providerUrl,
+  //   consumerAccount
+  // )
+  // assert(
+  //   !('error' in providerInitializeComputeResults.algorithm),
+  //   'Cannot order algorithm'
+  // )
+  // algo.transferTxId = await handleOrder(
+  //   providerInitializeComputeResults.algorithm,
+  //   resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
+  //   consumerAccount,
+  //   computeEnv.consumerAddress,
+  //   0
+  // )
+  // for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
+  //   assets[i].transferTxId = await handleOrder(
+  //     providerInitializeComputeResults.datasets[i],
+  //     dtAddressArray[i],
+  //     consumerAccount,
+  //     computeEnv.consumerAddress,
+  //     0
+  //   )
+  // }
+  // const computeJobs = await ProviderInstance.computeStart(
+  //   providerUrl,
+  //   web3,
+  //   consumerAccount,
+  //   computeEnv.id,
+  //   assets[0],
+  //   algo
+  // )
+  // freeEnvDatasetTxId = assets[0].transferTxId
+  // freeEnvAlgoTxId = algo.transferTxId
+  // assert(computeJobs, 'Cannot start compute job')
+  // computeJobId = computeJobs[0].jobId
 }
     
   /**
@@ -81,7 +102,8 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
    * automatically when your component should be re-rendered.
    */
 class RunCompute extends StreamlitComponentBase<State> {
-  
+  public state = { computeResult: "No compute result", isFocused: false }
+
     public render = (): ReactNode => {
       // Arguments that are passed to the plugin in Python are accessible
       // via `this.props.args`. Here, we access the "name" arg.
@@ -125,6 +147,10 @@ class RunCompute extends StreamlitComponentBase<State> {
     /** Click handler for our "Click Me!" button. */
     private onClicked = async (): Promise<void> => {
       const transaction: any = await runCompute(this.props.args["data_did"], this.props.args["data_did"], this.props.args["user_address"])
+      this.setState(
+        () => ({ computeResult: transaction }),
+        () => Streamlit.setComponentValue(this.state.computeResult)
+      )
       // Increment state.numClicks, and pass the new value back to
       // Streamlit via `Streamlit.setComponentValue`.
     }
