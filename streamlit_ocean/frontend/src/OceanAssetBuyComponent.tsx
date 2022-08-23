@@ -7,8 +7,6 @@ import React, { ReactNode } from "react"
 
 import Web3  from "web3"
 
-// import { getAccessDetails, getOrderPriceAndFees } from "./market/src/utils/accessDetailsAndPricing"
-
 import {
   Aquarius,
   balance,
