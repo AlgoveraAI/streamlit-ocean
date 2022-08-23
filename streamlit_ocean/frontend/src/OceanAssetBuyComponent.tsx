@@ -7,7 +7,7 @@ import React, { ReactNode } from "react"
 
 import Web3  from "web3"
 
-import { getAccessDetails } from "./market/src/@utils/accessDetailsAndPricing" 
+import { getAccessDetails, getOrderPriceAndFees } from "./market/src/@utils/accessDetailsAndPricing" 
 
 import {
   Aquarius,
@@ -163,35 +163,41 @@ async function buyAsset(did: string, userAddress: string) {
     }
     console.log("freParams", freParams)
 
-    const orderParams: any = {
-      consumer: userAddress[0],
-      serviceIndex: serviceIndex,
-      _providerFee: order.providerFee,
-      _consumeMarketFee: consumeMarkerFee ?? {
-        consumeMarketFeeAddress: "0x0000000000000000000000000000000000000000",
-        consumeMarketFeeToken: order.providerFee.providerFeeToken,
-        consumeMarketFeeAmount: "0",
-      },
-    };
+
+    const computeEnvs = ProviderInstance.getComputeEnvironments(providerUrl)
+    console.log("Available compute environments:", computeEnvs)
+
+    // const orderParams: any = {
+    //   consumer: userAddress[0],
+    //   serviceIndex: dt.datatokens[0].serviceId,
+    //   _providerFee: order.providerFee,
+    //   _consumeMarketFee: {
+    //     consumeMarketFeeAddress: "0x0000000000000000000000000000000000000000",
+    //     consumeMarketFeeToken: order.providerFee.providerFeeToken,
+    //     consumeMarketFeeAmount: "0",
+    //   },
+    // };
+
+    // const accessDetails = await getAccessDetails(
+    //   resolvedDataDDO.chainId,
+    //   dtAddress,
+    //   3600, // TODO: valid until
+    //   userAddress[0], // previously payerAccount
+    // );
     
-    const accessDetails = await getAccessDetails(
-      resolvedDataDDO.chainId,
-      dtAddress,
-      3600, // TODO: valid until
-      userAddress[0], // previously payerAccount
-    );
-    
-    // const orderPriceAndFees = await getOrderPriceAndFees(ddo, accessDetails, order.providerFee);
+    // const orderPriceAndFees = await getOrderPriceAndFees(resolvedDataDDO, accessDetails, order.providerFee);
 
     // const freParams: FreOrderParams = {
-    //   exchangeContract: this.config.fixedRateExchangeAddress,
+    //   exchangeContract: config.fixedRateExchangeAddress,
     //   exchangeId: accessDetails.addressOrId,
     //   maxBaseTokenAmount: orderPriceAndFees.price,
-    //   baseTokenAddress: order.providerFee?.providerFeeToken,
+    //   baseTokenAddress: config.oceanTokenAddress,
     //   baseTokenDecimals: 18, // TODO: Here we assume 18 decimal token, might not be the case
     //   swapMarketFee: "0",
     //   marketFeeAddress: "0x0000000000000000000000000000000000000000",
     // };
+
+    // await datatoken.buyFromFreAndOrder(dtAddress, userAddress[0], orderParams, freParams)
     
     // BELOW IS WRONG
     // const nftParams: NftCreateData = {
