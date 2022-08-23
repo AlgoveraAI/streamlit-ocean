@@ -6,7 +6,6 @@ import {
     withStreamlitConnection,
 } from "streamlit-component-lib"
 import React, { ReactNode } from "react"
-import * as ethers from "ethers"
   
 interface State {
     walletAddress: string
@@ -20,7 +19,61 @@ declare global {
 }
 
 async function runCompute(dataDid: string, algoDid: string , userAddress: string) {
-    return
+  const computeEnv = computeEnvs.find((ce) => ce.priceMin === 0)
+  assert(computeEnv, 'Cannot find the free compute env')
+
+  const assets: ComputeAsset[] = [
+    {
+      documentId: resolvedDdoWith1mTimeout.id,
+      serviceId: resolvedDdoWith1mTimeout.services[0].id
+    }
+  ]
+  const dtAddressArray = [resolvedDdoWith1mTimeout.services[0].datatokenAddress]
+  const algo: ComputeAlgorithm = {
+    documentId: resolvedAlgoDdoWith1mTimeout.id,
+    serviceId: resolvedAlgoDdoWith1mTimeout.services[0].id
+  }
+
+  providerInitializeComputeResults = await ProviderInstance.initializeCompute(
+    assets,
+    algo,
+    computeEnv.id,
+    computeValidUntil,
+    providerUrl,
+    consumerAccount
+  )
+  assert(
+    !('error' in providerInitializeComputeResults.algorithm),
+    'Cannot order algorithm'
+  )
+  algo.transferTxId = await handleOrder(
+    providerInitializeComputeResults.algorithm,
+    resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
+    consumerAccount,
+    computeEnv.consumerAddress,
+    0
+  )
+  for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
+    assets[i].transferTxId = await handleOrder(
+      providerInitializeComputeResults.datasets[i],
+      dtAddressArray[i],
+      consumerAccount,
+      computeEnv.consumerAddress,
+      0
+    )
+  }
+  const computeJobs = await ProviderInstance.computeStart(
+    providerUrl,
+    web3,
+    consumerAccount,
+    computeEnv.id,
+    assets[0],
+    algo
+  )
+  freeEnvDatasetTxId = assets[0].transferTxId
+  freeEnvAlgoTxId = algo.transferTxId
+  assert(computeJobs, 'Cannot start compute job')
+  computeJobId = computeJobs[0].jobId
 }
     
   /**
