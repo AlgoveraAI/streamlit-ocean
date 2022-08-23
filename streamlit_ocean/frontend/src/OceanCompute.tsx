@@ -145,27 +145,36 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
 
   console.log("algo.transferTxId", algo.transferTxId)
 
-  // for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
-  //   assets[i].transferTxId = await handleOrder(
-  //     providerInitializeComputeResults.datasets[i],
-  //     dtAddressArray[i],
-  //     consumerAccount,
-  //     computeEnv.consumerAddress,
-  //     0
-  //   )
-  // }
-  // const computeJobs = await ProviderInstance.computeStart(
-  //   providerUrl,
-  //   web3,
-  //   consumerAccount,
-  //   computeEnv.id,
-  //   assets[0],
-  //   algo
-  // )
-  // freeEnvDatasetTxId = assets[0].transferTxId
-  // freeEnvAlgoTxId = algo.transferTxId
-  // assert(computeJobs, 'Cannot start compute job')
-  // computeJobId = computeJobs[0].jobId
+  if (providerInitializeComputeResults.datasets !== undefined) {
+  for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
+    assets[i].transferTxId = await handleOrder(
+      providerInitializeComputeResults.datasets[i],
+      dtAddressArray[i],
+      consumerAccount,
+      computeEnv.consumerAddress,
+      0
+    )
+  }
+
+  const computeJobs: any = await ProviderInstance.computeStart(
+    providerUrl,
+    web3,
+    consumerAccount,
+    computeEnv.id,
+    assets[0],
+    algo
+  )
+  console.log("computeJobs", computeJobs)
+
+  const freeEnvDatasetTxId = assets[0].transferTxId
+  console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
+  const freeEnvAlgoTxId = algo.transferTxId
+  console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
+  const computeJobId = computeJobs[0].jobId
+
+  console.log("computeJobId", computeJobId)
+  }
+
   }
 
 }
