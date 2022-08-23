@@ -205,8 +205,22 @@ async function buyAsset(did: string, userAddress: string) {
       
       const exchangeId = await fixedRate.generateExchangeId(config.oceanTokenAddress, dtAddress) // previously contracts.daiAddress
       console.log("exchangeId", exchangeId)
-      const tx = await fixedRate.buyDT(userAddress[0], exchangeId, '1', '100')
-      console.log("tx", tx)
+
+      const dtSupply = await fixedRate.getDTSupply(exchangeId)
+      console.log("dtSupply", dtSupply)
+      const btSupply = await fixedRate.getBTSupply(exchangeId)
+      console.log("btSupply", btSupply)
+
+      const baseInGivenOutDT = await fixedRate.calcBaseInGivenOutDT(exchangeId, '100')
+      console.log("baseInGivenOutDT", baseInGivenOutDT)
+      const amountBtOut = await fixedRate.getAmountBTOut(exchangeId, '100')
+      console.log("amountBtOut", amountBtOut)
+
+
+
+
+      // const tx = await fixedRate.buyDT(userAddress[0], exchangeId, '1', '100')
+      // console.log("tx", tx)
 
       // const freParams: any = {
       //   exchangeContract: config.fixedRateExchangeAddress,
