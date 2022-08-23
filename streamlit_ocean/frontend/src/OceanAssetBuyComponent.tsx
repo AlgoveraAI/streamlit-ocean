@@ -7,11 +7,12 @@ import React, { ReactNode } from "react"
 
 import Web3  from "web3"
 
-import { getAccessDetails, getOrderPriceAndFees } from "./utils/accessDetailsAndPricing" 
+// import { getAccessDetails, getOrderPriceAndFees } from "./market/src/utils/accessDetailsAndPricing"
 
 import {
   Aquarius,
   balance,
+  Asset,
   approve,
   configHelperNetworks,
   FixedRateExchange,
@@ -26,9 +27,17 @@ import {
   NftCreateData,
   Erc20CreateParams,
   ZERO_ADDRESS,
+  approveWei,
 } from '@oceanprotocol/lib'
 
 var axios = require('axios');
+
+declare global {
+  interface AssetExtended extends Asset {
+    accessDetails?: any
+  }
+}
+
 
 async function query(datatokenAddress: string) {
   const query = `{
@@ -108,6 +117,7 @@ const getTestConfig = async (web3: Web3) => {
   return config
 }
 
+
 async function buyAsset(did: string, userAddress: string) {
     const accounts = await window.ethereum.request({
       method: 'eth_requestAccounts',
@@ -125,7 +135,7 @@ async function buyAsset(did: string, userAddress: string) {
     let consumerOCEANBalance = await balance(web3, config.oceanTokenAddress, userAddress[0])
     console.log(`Consumer OCEAN balance before swap: ${consumerOCEANBalance}`)
     console.log('Did', did)
-    const dt = await aquarius.resolve(did)
+    const dt: AssetExtended = await aquarius.resolve(did)
     const resolvedDataDDO = await aquarius.waitForAqua(did);
     console.log("dt", dt)
     console.log("resolvedDataDDO", resolvedDataDDO)
@@ -141,39 +151,92 @@ async function buyAsset(did: string, userAddress: string) {
     const freAddressRinkeby = config.fixedRateExchangeAddress
     console.log("config freAddressRinkeby", config.fixedRateExchangeAddress)
     const oceanAddressRinkeby = config.oceanTokenAddress
-    await approve(web3, userAddress[0], oceanAddressRinkeby, freAddressRinkeby, '100')
+    const txApprove = await approve(web3, userAddress[0], oceanAddressRinkeby, freAddressRinkeby, '100')
 
     const fixedRate = new FixedRateExchange(web3, freAddressRinkeby)
-    console.log(fixedRate)
-    // const freContractParams = await getFreOrderParams(web3, '1')
-    // const oceanAmount = await (
-    //   await fixedRate.calcBaseInGivenOutDT(`${freAddressRinkeby}-${dtAddress}`, '1')
-    // ).baseTokenAmount
-    // console.log(`Ocean amount: ${oceanAmount}`)
-    const freParams: FreCreationParams = {
-      fixedRateAddress: config.fixedRateExchangeAddress,
-      baseTokenAddress: config.oceanTokenAddress,
-      owner: dt.event.from,
-      marketFeeCollector: dt.event.from,
-      baseTokenDecimals: 18,
-      datatokenDecimals: 18,
-      fixedRate: '1',
-      marketFee: '0.001',
-      withMint: false
-    }
-    console.log("freParams", freParams)
+    fixedRate.oceanAddress = oceanAddressRinkeby
+    console.log("fixedRate", fixedRate)
 
 
-    const computeEnvs = ProviderInstance.getComputeEnvironments(providerUrl)
+    // const freParams: any = {
+    //   fixedRateAddress: config.fixedRateExchangeAddress,
+    //   baseTokenAddress: config.oceanTokenAddress,
+    //   owner: dt.event.from,
+    //   marketFeeCollector: dt.event.from,
+    //   baseTokenDecimals: 18,
+    //   datatokenDecimals: 18,
+    //   fixedRate: '1',
+    //   marketFee: '0.001',
+    //   withMint: false
+    // }
+
+    
+    // console.log("freParams", freParams)
+    
+    const computeEnvs = await ProviderInstance.getComputeEnvironments(providerUrl)
     console.log("Available compute environments:", computeEnvs)
+    // let's have 2 minutes of compute access
+    const mytime = new Date()
+    const computeMinutes = 1
+    mytime.setMinutes(mytime.getMinutes() + computeMinutes)
+    let computeValidUntil = Math.floor(mytime.getTime() / 1000)
+    // const computeInit = await ProviderInstance.initializeCompute(resolvedDataDDO, algorithm, computeEnvs[0].id, computeValidUntil, providerUrl, userAddress[0])
+    
+    const initializeData =
+    (await ProviderInstance.initialize(
+      dt.id,
+      dt.services[0].id,
+      0,
+      userAddress[0],
+      dt.services[0].serviceEndpoint
+      ))
+      
+      const orderParams: any = {
+        consumer: computeEnvs[0].consumerAddress,
+        serviceIndex: 0,
+        _providerFee: initializeData.providerFee,
+        _consumeMarketFee: {
+          consumeMarketFeeAddress: '0x9984b2453eC7D99a73A5B3a46Da81f197B753C8d',
+          consumeMarketFeeAmount: '0',
+          consumeMarketFeeToken:
+          '0x0000000000000000000000000000000000000000'
+        }
+      }
+      
+      const exchangeId = await fixedRate.generateExchangeId(config.oceanTokenAddress, dtAddress) // previously contracts.daiAddress
+      console.log("exchangeId", exchangeId)
+      const tx = await fixedRate.buyDT(userAddress[0], exchangeId, '1', '100')
+      console.log("tx", tx)
+
+      // const freParams: any = {
+      //   exchangeContract: config.fixedRateExchangeAddress,
+      //   exchangeId: exchangeId,
+      //   maxBaseTokenAmount: '20',
+      //   baseTokenAddress: config.oceanTokenAddress,
+      //   baseTokenDecimals: config.oceanTokenAddress?.decimals || 18,
+      //   swapMarketFee: '0',
+      //   swapMarketFeeAddress: '0x9984b2453eC7D99a73A5B3a46Da81f197B753C8d'
+      // }
+
+      // console.log("freParams", freParams)
+
 
     // const orderParams: any = {
     //   consumer: userAddress[0],
     //   serviceIndex: dt.datatokens[0].serviceId,
-    //   _providerFee: order.providerFee,
+    //   _providerFee: {
+    //     providerFeeAddress: user1,
+    //     providerFeeToken: providerFeeToken,
+    //     providerFeeAmount: providerFeeAmount,
+    //     v: v,
+    //     r: r,
+    //     s: s,
+    //     providerData: web3.utils.toHex(web3.utils.asciiToHex(providerData)),
+    //     validUntil: providerValidUntil
+    //   },
     //   _consumeMarketFee: {
     //     consumeMarketFeeAddress: "0x0000000000000000000000000000000000000000",
-    //     consumeMarketFeeToken: order.providerFee.providerFeeToken,
+    //     consumeMarketFeeToken: ZERO_ADDRESS,
     //     consumeMarketFeeAmount: "0",
     //   },
     // };
@@ -196,8 +259,10 @@ async function buyAsset(did: string, userAddress: string) {
     //   swapMarketFee: "0",
     //   marketFeeAddress: "0x0000000000000000000000000000000000000000",
     // };
+    // resolvedDataDDO.accessDetails.addressOrId
 
-    // await datatoken.buyFromFreAndOrder(dtAddress, userAddress[0], orderParams, freParams)
+    // const tx = await datatoken.buyFromFreAndOrder(dtAddress, userAddress[0], orderParams, freParams)
+    // console.log("tx", tx)
     
     // BELOW IS WRONG
     // const nftParams: NftCreateData = {
@@ -225,7 +290,6 @@ async function buyAsset(did: string, userAddress: string) {
     // const freAddress = tx.events.NewFixedRate.returnValues.exchangeContract
     // const freId = tx.events.NewFixedRate.returnValues.exchangeId
 
-    // await fixedRate.buyDT(userAddress[0], "0", '1', '10')
 
     // consumerOCEANBalance = await balance(web3, addresses.Ocean, userAddress)
     // console.log(`Consumer OCEAN balance after swap: ${consumerOCEANBalance}`)
