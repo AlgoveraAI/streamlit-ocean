@@ -7,6 +7,8 @@ import React, { ReactNode } from "react"
 
 import Web3  from "web3"
 
+import { getAccessDetails } from "./market/src/@utils/accessDetailsAndPricing" 
+
 import {
   Aquarius,
   balance,
@@ -124,7 +126,9 @@ async function buyAsset(did: string, userAddress: string) {
     console.log(`Consumer OCEAN balance before swap: ${consumerOCEANBalance}`)
     console.log('Did', did)
     const dt = await aquarius.resolve(did)
+    const resolvedDataDDO = await aquarius.waitForAqua(did);
     console.log("dt", dt)
+    console.log("resolvedDataDDO", resolvedDataDDO)
     const dtAddress = dt.datatokens[0].address
     console.log("dtAddress", dtAddress)
     console.log("dt.datatokens[0]" , dt.datatokens[0])
@@ -158,34 +162,58 @@ async function buyAsset(did: string, userAddress: string) {
       withMint: false
     }
     console.log("freParams", freParams)
-    const factory = new NftFactory(config.erc721FactoryAddress, web3)
+
+    const orderParams: any = {
+      consumer: userAddress[0],
+      serviceIndex: serviceIndex,
+      _providerFee: order.providerFee,
+      _consumeMarketFee: consumeMarkerFee ?? {
+        consumeMarketFeeAddress: "0x0000000000000000000000000000000000000000",
+        consumeMarketFeeToken: order.providerFee.providerFeeToken,
+        consumeMarketFeeAmount: "0",
+      },
+    };
     
-    const nftParams: NftCreateData = {
-      name: dt.nft.name,
-      symbol: dt.nft.symbol,
-      templateIndex: 1,
-      tokenURI: '',
-      transferable: true,
-      owner: dt.event.from
-    }
+    const accessDetails = await getAccessDetails(
+      resolvedDataDDO.chainId,
+      dtAddress,
+      3600, // TODO: valid until
+      userAddress[0], // previously payerAccount
+    );
+    
+    // const orderPriceAndFees = await getOrderPriceAndFees(ddo, accessDetails, order.providerFee);
 
-    const erc20Params: Erc20CreateParams = {
-      templateIndex: 1,
-      cap: '100000',
-      feeAmount: '0',
-      paymentCollector: ZERO_ADDRESS,
-      feeToken: ZERO_ADDRESS,
-      minter: dt.event.from,
-      mpFeeAddress: ZERO_ADDRESS
-    }
+    // const freParams: FreOrderParams = {
+    //   exchangeContract: this.config.fixedRateExchangeAddress,
+    //   exchangeId: accessDetails.addressOrId,
+    //   maxBaseTokenAmount: orderPriceAndFees.price,
+    //   baseTokenAddress: order.providerFee?.providerFeeToken,
+    //   baseTokenDecimals: 18, // TODO: Here we assume 18 decimal token, might not be the case
+    //   swapMarketFee: "0",
+    //   marketFeeAddress: "0x0000000000000000000000000000000000000000",
+    // };
+    
+    // BELOW IS WRONG
+    // const nftParams: NftCreateData = {
+    //   name: dt.nft.name,
+    //   symbol: dt.nft.symbol,
+    //   templateIndex: 1,
+    //   tokenURI: '',
+    //   transferable: true,
+    //   owner: dt.event.from
+    // }
 
-    const tx = await factory.createNftErc20WithFixedRate(
-      dt.event.from,
-      nftParams,
-      erc20Params,
-      freParams
-    )
-    console.log("tx", tx)
+    // const erc20Params: Erc20CreateParams = {
+    //   templateIndex: 1,
+    //   cap: '100000',
+    //   feeAmount: '0',
+    //   paymentCollector: ZERO_ADDRESS,
+    //   feeToken: ZERO_ADDRESS,
+    //   minter: dt.event.from,
+    //   mpFeeAddress: ZERO_ADDRESS
+    // }
+
+    
     // const freNftAddress = tx.events.NFTCreated.returnValues[0]
     // const freDatatokenAddress = tx.events.TokenCreated.returnValues[0]
     // const freAddress = tx.events.NewFixedRate.returnValues.exchangeContract
