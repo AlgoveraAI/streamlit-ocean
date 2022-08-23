@@ -24,7 +24,7 @@ config = Config('./streamlit_ocean/config.ini')
 ocean = Ocean(config)
 # st.write(f"Ocean network: {ocean.config.network_url}")
 
-def search(term="", did_in="", address=""):
+def search(term="", address=""):
     """
     Search for an asset on the Ocean Marketplace.
 
@@ -37,6 +37,7 @@ def search(term="", did_in="", address=""):
     results = None
     dids = None
     data=None
+    did_in = None
     if term and not did_in:
         assets = ocean.assets.search(term)
 
@@ -140,11 +141,10 @@ if user_address[0] is not "n":
     st.write(address)
 
     st.header("Search & Buy Dataset")
-    term = st.text_input("Search for an asset by name", "")
-    did = st.text_input("Search for an asset by DID", "")
+    term = st.text_input("Search for an asset", "")
 
     if st.button(label="Search"):
-        results = search(term, did, address)
+        results = search(term, address)
         st.write(f"Asset DID: {results[0][0]}")
         st.image(results[0][1])
         st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
