@@ -9,9 +9,10 @@ import React, { ReactNode } from "react"
 
 import Web3  from "web3"
 
-import { 
+import {
+  Aquarius,
+  ConfigHelper,
   ProviderInstance,
-  ConfigHelper
  } from "@oceanprotocol/lib"
   
 interface State {
@@ -42,6 +43,12 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   const computeEnvs = await ProviderInstance.getComputeEnvironments(providerUrl)
   const computeEnv = computeEnvs.find((ce) => ce.priceMin === 0)
   console.log("computeEnv", computeEnv)
+
+  const aquarius = new Aquarius(config.metadataCacheUri)
+  console.log("Data DID", dataDid)
+  console.log("Algo DID", algoDid)
+  // const resolvedDataDDO = await aquarius.waitForAqua(dataDid);
+  // console.log("resolvedDataDDO", resolvedDataDDO)
 
   // const assets: ComputeAsset[] = [
   //   {
@@ -146,7 +153,7 @@ class RunCompute extends StreamlitComponentBase<State> {
   
     /** Click handler for our "Click Me!" button. */
     private onClicked = async (): Promise<void> => {
-      const transaction: any = await runCompute(this.props.args["data_did"], this.props.args["data_did"], this.props.args["user_address"])
+      const transaction: any = await runCompute(this.props.args["data_did"], this.props.args["algo_did"], this.props.args["user_address"])
       this.setState(
         () => ({ computeResult: transaction }),
         () => Streamlit.setComponentValue(this.state.computeResult)

@@ -150,11 +150,11 @@ if user_address[0] is not "n":
         st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
 
 _ocean_data = components.declare_component("ocean_data", url="http://localhost:3002/")
-def ocean_data(label, did="", key=None, user_address=None):
+def ocean_data(label, did="", key=None, user_address=None, dt_did=None, alg_did=None):
     """
     Wallet Connect component.
     """
-    return _ocean_data(label=label, did=did, default="not", key=key, user_address=user_address)
+    return _ocean_data(label=label, did=did, default="not", key=key, user_address=user_address, data_did=dt_did, algo_did=alg_did)
 
 if results:
     ocean_data_button = ocean_data(label="ocean", did=results[0][0], user_address=user_address)
@@ -163,4 +163,6 @@ if results:
 
 data_did = st.text_input("Data DID: ", "")
 algo_did = st.text_input("Algorithm DID: ", "")
-st.button("Run C2D")
+
+if data_did and algo_did:
+    ocean_compute_button = ocean_data(label="ocean_compute", key=algo_did, user_address=user_address, dt_did=data_did, alg_did=algo_did)
