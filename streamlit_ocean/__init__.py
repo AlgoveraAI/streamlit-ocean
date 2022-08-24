@@ -146,7 +146,7 @@ def ocean_data(label, did="", key=None, user_address=None, dt_did=None, alg_did=
 results = None
 address = None
 user_address = connect(label="connect_button")
-if user_address[0] is not "n":
+if user_address[0] != "n":
     address = Web3.toChecksumAddress(user_address[0])
     st.write(address)
 col1, col2 = st.columns(2)
