@@ -196,7 +196,7 @@ class RunCompute extends StreamlitComponentBase<State> {
       // streamlit app.
       const { theme } = this.props
       const style: React.CSSProperties = {}
-  
+
       // Maintain compatibility with older versions of Streamlit that don't send
       // a theme object.
       if (theme) {
@@ -208,7 +208,7 @@ class RunCompute extends StreamlitComponentBase<State> {
         style.border = borderStyling
         style.outline = borderStyling
       }
-  
+
       // Show a button and some text.
       // When the button is clicked, we'll increment our "numClicks" state
       // variable, and send its new value back to Streamlit, where it'll

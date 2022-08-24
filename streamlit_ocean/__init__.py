@@ -134,20 +134,6 @@ def search(term="", address=""):
 
 
 # End Ocean Search
-results = None
-user_address = connect(label="connect_button")
-if user_address[0] is not "n":
-    address = Web3.toChecksumAddress(user_address[0])
-    st.write(address)
-
-    st.header("Search & Buy Dataset")
-    term = st.text_input("Search for an asset", "")
-
-    if st.button(label="Search"):
-        results = search(term, address)
-        st.write(f"Asset DID: {results[0][0]}")
-        st.image(results[0][1])
-        st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
 
 _ocean_data = components.declare_component("ocean_data", url="http://localhost:3002/")
 def ocean_data(label, did="", key=None, user_address=None, dt_did=None, alg_did=None):
@@ -156,13 +142,34 @@ def ocean_data(label, did="", key=None, user_address=None, dt_did=None, alg_did=
     """
     return _ocean_data(label=label, did=did, default="not", key=key, user_address=user_address, data_did=dt_did, algo_did=alg_did)
 
-if results:
-    ocean_data_button = ocean_data(label="ocean", did=results[0][0], user_address=user_address)
-    st.write(f"Ocean data for {ocean_data_button}")
+
+results = None
+user_address = connect(label="connect_button")
+
+if user_address[0] is not "n":
+    address = Web3.toChecksumAddress(user_address[0])
+    st.write(address)
+    col1, col2 = st.columns(2)
+    with col1:
 
 
-data_did = st.text_input("Data DID: ", "")
-algo_did = st.text_input("Algorithm DID: ", "")
+        st.header("Search & Buy Dataset")
+        term = st.text_input("Search for an asset", "")
 
-if data_did and algo_did:
-    ocean_compute_button = ocean_data(label="ocean_compute", key=algo_did, user_address=user_address, dt_did=data_did, alg_did=algo_did)
+        if st.button(label="Search"):
+            results = search(term, address)
+            st.write(f"Asset DID: {results[0][0]}")
+            st.image(results[0][1])
+            st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
+
+        if results:
+            ocean_data_button = ocean_data(label="ocean", did=results[0][0], user_address=user_address)
+            st.write(f"Ocean data for {ocean_data_button}")
+
+with col2:
+    st.header("Run Compute to Data")
+    data_did = st.text_input("Data DID: ", "")
+    algo_did = st.text_input("Algorithm DID: ", "")
+
+    if data_did and algo_did:
+        ocean_compute_button = ocean_data(label="ocean_compute", key=algo_did, user_address=user_address, dt_did=data_did, alg_did=algo_did)
