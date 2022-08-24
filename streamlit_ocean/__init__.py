@@ -144,13 +144,13 @@ def ocean_data(label, did="", key=None, user_address=None, dt_did=None, alg_did=
 
 
 results = None
+address = None
 user_address = connect(label="connect_button")
-
 if user_address[0] is not "n":
     address = Web3.toChecksumAddress(user_address[0])
     st.write(address)
-    col1, col2 = st.columns(2)
-    with col1:
+col1, col2 = st.columns(2)
+with col1:
 
 
         st.header("Search & Buy Dataset")
@@ -160,11 +160,9 @@ if user_address[0] is not "n":
             results = search(term, address)
             st.write(f"Asset DID: {results[0][0]}")
             st.image(results[0][1])
-            st.write(f"Balance at address {user_address[0]}: {results[0][2]}")
 
         if results:
             ocean_data_button = ocean_data(label="ocean", did=results[0][0], user_address=user_address)
-            st.write(f"Ocean data for {ocean_data_button}")
 
 with col2:
     st.header("Run Compute to Data")
