@@ -13,6 +13,7 @@ import {
   approveWei,
   Aquarius,
   Asset,
+  balance,
   ComputeOutput,
   ConfigHelper,
   ConsumeMarketFee,
@@ -109,16 +110,34 @@ async function handleOrder(
       );
       return tx.transactionHash;
     }
+  
+    // Check if user already owns the tokens
+    const tokenBalance = await balance(web3, datatokenAddress, payerAccount);
+    console.log("Datatoken balance", tokenBalance);
 
-  const tx = await datatoken.startOrder(
+  if (Number(tokenBalance) >= 1) {
+    await approveProviderFee();
+    const tx = await datatoken.startOrder(
+      datatokenAddress,
+      payerAccount,
+      consumerAccount,
+      serviceIndex,
+      order.providerFee,
+      consumeMarkerFee
+    )
+    return tx.transactionHash
+  }
+
+  return await buyAndOrder(
+    ddo,
+    order,
     datatokenAddress,
     payerAccount,
     consumerAccount,
     serviceIndex,
-    order.providerFee,
+    approveProviderFee,
     consumeMarkerFee
-  )
-  return tx.transactionHash
+  );
 }
 
 async function runCompute(dataDid: string, algoDid: string , userAddress: string) {
