@@ -19,11 +19,11 @@ import {
   Datatoken,
   ProviderFees,
   ProviderInstance,
-  getFreOrderParams,
+  // getFreOrderParams,
   FreCreationParams,
   NftFactory,
   NftCreateData,
-  Erc20CreateParams,
+  // Erc20CreateParams,
   ZERO_ADDRESS,
   approveWei,
 } from '@oceanprotocol/lib'
@@ -87,8 +87,9 @@ async function buyAsset(did: string, userAddress: string) {
     console.log("config freAddressRinkeby", config.fixedRateExchangeAddress)
     const oceanAddressRinkeby = config.oceanTokenAddress
 
-    const fixedRate = new FixedRateExchange(web3, freAddressRinkeby)
-    fixedRate.oceanAddress = oceanAddressRinkeby
+    // const fixedRate = new FixedRateExchange(web3, freAddressRinkeby)
+    const fixedRate = new FixedRateExchange(freAddressRinkeby, web3)
+    // fixedRate.oceanAddress = oceanAddressRinkeby
     console.log("fixedRate", fixedRate)
     
       const exchangeId = await fixedRate.generateExchangeId(config.oceanTokenAddress, dtAddress) // previously contracts.daiAddress
@@ -96,24 +97,33 @@ async function buyAsset(did: string, userAddress: string) {
       const exchangeIds = await fixedRate.getExchanges()
       console.log("All exchangeIds", exchangeIds)
       console.log(exchangeIds.includes(exchangeId))
+      if (exchangeIds.includes(exchangeId) == false) {
+        return "Error, asset is either not with fixed pricing or not available for purchase"
+      }
 
-      const dtSupply = await fixedRate.getDTSupply(exchangeId)
+      // const dtSupply = await fixedRate.getDTSupply(exchangeId)
+      const dtSupply = await fixedRate.getDatatokenSupply(exchangeId)
       console.log("dtSupply", dtSupply)
-      const btSupply = await fixedRate.getBTSupply(exchangeId)
+      // const btSupply = await fixedRate.getBTSupply(exchangeId)
+      const btSupply = await fixedRate.getBasetokenSupply(exchangeId)
       console.log("btSupply", btSupply)
 
-      const baseInGivenOutDT = await fixedRate.calcBaseInGivenOutDT(exchangeId, '100')
+      // const baseInGivenOutDT = await fixedRate.calcBaseInGivenOutDT(exchangeId, '100')
+      const baseInGivenOutDT = await fixedRate.calcBaseInGivenDatatokensOut(exchangeId, '100')
       console.log("baseInGivenOutDT", baseInGivenOutDT)
-      const amountBtOut = await fixedRate.getAmountBTOut(exchangeId, '100')
+      // const amountBtOut = await fixedRate.getAmountBTOut(exchangeId, '100')
+      const amountBtOut = await fixedRate.getAmountBasetokensOut(exchangeId, '100')
       console.log("amountBtOut", amountBtOut)
 
       console.log("Awaiting active fre", await fixedRate.isActive(exchangeId))
 
-      const txApprove = await approve(web3, userAddress[0], oceanAddressRinkeby, fixedRate.fixedRateAddress, '100')
+      // const txApprove = await approve(web3, userAddress[0], oceanAddressRinkeby, fixedRate.fixedRateAddress, '100')
+      const txApprove = await approve(web3, config, userAddress[0], oceanAddressRinkeby, fixedRate.address, '100')
       console.log("txApprove", txApprove)
 
-      const tx = await fixedRate.buyDT(userAddress[0], exchangeId, '1', '100')
+      const tx = await fixedRate.buyDatatokens(userAddress[0], exchangeId, '1', '100')
       console.log("tx", tx)
+      return "Success, bought asset"
 
 }
 /**

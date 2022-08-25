@@ -12,13 +12,14 @@ import Web3  from "web3"
 import {
   approveWei,
   Aquarius,
+  ComputeOutput,
   ConfigHelper,
   ConsumeMarketFee,
   Datatoken,
   ProviderComputeInitialize,
   ProviderInstance,
  } from "@oceanprotocol/lib"
-  
+
 interface State {
     computeResult: any
     isFocused: boolean
@@ -48,20 +49,48 @@ async function handleOrder(
   serviceIndex: number,
   consumeMarkerFee?: ConsumeMarketFee
 ) {
+  console.log("order provider fee", order.providerFee)
   /* We do have 3 possible situations:
      - have validOrder and no providerFees -> then order is valid, providerFees are valid, just use it in startCompute
      - have validOrder and providerFees -> then order is valid but providerFees are not valid, we need to call reuseOrder and pay only providerFees
      - no validOrder -> we need to call startOrder, to pay 1 DT & providerFees
   */
-  if (order.providerFee && order.providerFee.providerFeeAmount) {
-    await approveWei(
-      web3,
-      payerAccount,
-      order.providerFee.providerFeeToken,
-      datatokenAddress,
-      order.providerFee.providerFeeAmount
-    )
-  }
+    const approveProviderFee = async () => {
+      // Approve provider fees if exists
+      if (order.providerFee && order.providerFee.providerFeeAmount) {
+        await datatoken.approve(
+          order.providerFee.providerFeeToken,
+          datatokenAddress,
+          order.providerFee.providerFeeAmount,
+          payerAccount
+        );
+      }
+    };
+
+    if (order.validOrder) {
+      console.log("Order is already valid.");
+      if (!order.providerFee) return order.validOrder;
+
+      await approveProviderFee();
+
+      const tx = await datatoken.reuseOrder(
+        datatokenAddress,
+        payerAccount,
+        order.validOrder,
+        order.providerFee // Must be defined because of first IF check
+      );
+      return tx.transactionHash;
+    }
+
+  // if (order.providerFee && order.providerFee.providerFeeAmount) {
+  //   await approveWei(
+  //     web3,
+  //     payerAccount,
+  //     order.providerFee.providerFeeToken,
+  //     datatokenAddress,
+  //     order.providerFee.providerFeeAmount
+  //   )
+  // }
   if (order.validOrder) {
     if (!order.providerFee) return order.validOrder
     const tx = await datatoken.reuseOrder(
@@ -121,9 +150,11 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   }
   console.log("algo", algo)
   const mytime = new Date()
-  const computeMinutes = 1
+  const computeMinutes = 20
+  console.log("computeMinutes", computeMinutes)
   mytime.setMinutes(mytime.getMinutes() + computeMinutes)
   let computeValidUntil = Math.floor(mytime.getTime() / 1000)
+  console.log("computeValidUntil", computeValidUntil)
   if (computeEnv !== undefined) {
   const providerInitializeComputeResults = await ProviderInstance.initializeCompute(
     assets,
@@ -134,8 +165,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
     consumerAccount
   )
   console.log("providerInitializeComputeResults", providerInitializeComputeResults)
-  console.log(datatoken.startOrder)
-
+  console.log("Handling order for algorithm")
   algo.transferTxId = await handleOrder(
     providerInitializeComputeResults.algorithm,
     resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
@@ -148,6 +178,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
 
   if (providerInitializeComputeResults.datasets !== undefined) {
   for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
+    console.log("Handling order for dataset")
     assets[i].transferTxId = await handleOrder(
       providerInitializeComputeResults.datasets[i],
       dtAddressArray[i],
@@ -156,14 +187,23 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
       0
     )
   }
+  console.log("About to start compute")
+  console.log("Provider URL", providerUrl)
+  const output: ComputeOutput = {
+    publishAlgorithmLog: true,
+    publishOutput: true
+  }
 
   const computeJobs: any = await ProviderInstance.computeStart(
-    providerUrl,
-    web3,
-    consumerAccount,
-    computeEnv.id,
-    assets[0],
-    algo
+      providerUrl,
+      web3,
+      consumerAccount,
+      computeEnv.id,
+      assets[0],
+      algo,
+      undefined,
+      undefined,
+      output
   )
 
   console.log("computeJobs", computeJobs)
@@ -171,7 +211,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   const freeEnvDatasetTxId = assets[0].transferTxId
   console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
   const freeEnvAlgoTxId = algo.transferTxId
-  console.log("freeEnvDatasetTxId", freeEnvDatasetTxId)
+  console.log("freeEnvAlgoTxId", freeEnvAlgoTxId)
   const computeJobId = computeJobs[0].jobId
 
   console.log("computeJobId", computeJobId)
@@ -256,4 +296,3 @@ class RunCompute extends StreamlitComponentBase<State> {
 //
 // You don't need to edit withStreamlitConnection (but you're welcome to!).
 export default withStreamlitConnection(RunCompute)
-  
