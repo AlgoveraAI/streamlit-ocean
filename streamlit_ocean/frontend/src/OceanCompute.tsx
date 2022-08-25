@@ -61,16 +61,21 @@ declare global {
   publisherMarketOrderFee: string
 }
 
-const web3 = new Web3(window.ethereum)
-
+// helper functions
 const getTestConfig = async (web3: Web3) => {
   const config = new ConfigHelper().getConfig(await web3.eth.getChainId())
   config.providerUri = process.env.PROVIDER_URL || config.providerUri
   return config
 }
 
+
+
+
+// default variables used throughout the script
+const web3 = new Web3(window.ethereum)
 const datatoken = new Datatoken(web3)
 
+// core functions for interacting with the Ocean Market
 async function handleOrder(
   ddo: Asset & { accessDetails?: AccessDetails },
   order: any,
@@ -238,18 +243,7 @@ const buyAndOrder = async (
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+// main function executed by the button
 async function runCompute(dataDid: string, algoDid: string , userAddress: string) {
   const accounts = await window.ethereum.request({
     method: 'eth_requestAccounts',
