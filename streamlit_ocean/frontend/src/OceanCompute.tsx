@@ -12,6 +12,7 @@ import Web3  from "web3"
 import {
   approveWei,
   Aquarius,
+  Asset,
   ComputeOutput,
   ConfigHelper,
   ConsumeMarketFee,
@@ -31,6 +32,31 @@ declare global {
     }
 }
 
+/**
+   * @interface AccessDetails
+   * @prop {'fixed' | 'free' | 'NOT_SUPPORTED'}  type
+   * @prop {string} price can be either spotPrice/rate
+   * @prop {string} addressOrId for fixed/free this is an id.
+   * @prop {TokenInfo} baseToken
+   * @prop {TokenInfo} datatoken
+   * @prop {bool} isPurchasable checks if you can buy a datatoken from fixed rate exchange/dispenser.
+   * @prop {bool} isOwned checks if there are valid orders for this, it also takes in consideration timeout
+   * @prop {string} validOrderTx  the latest valid order tx, it also takes in consideration timeout
+   * @prop {string} publisherMarketOrderFee this is here just because it's more efficient, it's allready in the query
+   * @prop {FeeInfo} feeInfo  values of the relevant fees
+   */
+ interface AccessDetails {
+  type: 'fixed' | 'free' | 'NOT_SUPPORTED'
+  price: string
+  addressOrId: string
+  baseToken: any
+  datatoken: any
+  isPurchasable?: boolean
+  isOwned: boolean
+  validOrderTx: string
+  publisherMarketOrderFee: string
+}
+
 const web3 = new Web3(window.ethereum)
 
 const getTestConfig = async (web3: Web3) => {
@@ -42,6 +68,7 @@ const getTestConfig = async (web3: Web3) => {
 const datatoken = new Datatoken(web3)
 
 async function handleOrder(
+  ddo: Asset & { accessDetails?: AccessDetails },
   order: any,
   datatokenAddress: string,
   payerAccount: string,
@@ -168,6 +195,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   console.log("providerInitializeComputeResults", providerInitializeComputeResults)
   console.log("Handling order for algorithm")
   algo.transferTxId = await handleOrder(
+    resolvedAlgoDdoWith1mTimeout,
     providerInitializeComputeResults.algorithm,
     resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
     consumerAccount,
@@ -181,6 +209,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   for (let i = 0; i < providerInitializeComputeResults.datasets.length; i++) {
     console.log("Handling order for dataset")
     assets[i].transferTxId = await handleOrder(
+      resolvedDdoWith1mTimeout,
       providerInitializeComputeResults.datasets[i],
       dtAddressArray[i],
       consumerAccount,
@@ -202,9 +231,9 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
       computeEnv.id,
       assets[0],
       algo,
-      undefined,
-      undefined,
-      output
+      // undefined,
+      // undefined,
+      // output
   )
 
   console.log("computeJobs", computeJobs)
