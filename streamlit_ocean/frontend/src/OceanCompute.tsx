@@ -10,6 +10,7 @@ import React, { ReactNode } from "react"
 import Web3  from "web3"
 
 import {
+  amountToUnits,
   approveWei,
   Aquarius,
   Asset,
@@ -18,6 +19,8 @@ import {
   ConfigHelper,
   ConsumeMarketFee,
   Datatoken,
+  FreOrderParams,
+  OrderParams,
   ProviderComputeInitialize,
   ProviderInstance,
  } from "@oceanprotocol/lib"
@@ -139,6 +142,113 @@ async function handleOrder(
     consumeMarkerFee
   );
 }
+
+// buyAndOrder datasets, algorithms, compute
+const buyAndOrder = async (
+  ddo: Asset & { accessDetails?: AccessDetails },
+  order: ProviderComputeInitialize,
+  datatokenAddress: string,
+  payerAccount: string,
+  consumerAccount: string,
+  serviceIndex: number,
+  approveProviderFee: () => Promise<void>,
+  consumeMarkerFee?: ConsumeMarketFee
+) => {
+  if (!order.providerFee)
+    throw new Error("Undefined token for paying fees.");
+
+  const orderParams: OrderParams = {
+    consumer: consumerAccount,
+    serviceIndex: serviceIndex,
+    _providerFee: order.providerFee,
+    _consumeMarketFee: consumeMarkerFee ?? {
+      consumeMarketFeeAddress: "0x0000000000000000000000000000000000000000",
+      consumeMarketFeeToken: order.providerFee.providerFeeToken,
+      consumeMarketFeeAmount: "0",
+    },
+  };
+
+  const accessDetails = ddo.accessDetails ?? await getAccessDetails(
+    ddo.chainId,
+    datatokenAddress,
+    3600, // TODO: valid until
+    payerAccount,
+  );
+  console.log("accessDetails", accessDetails);
+  const config: any = await getTestConfig(web3)
+
+  switch (accessDetails?.type) {
+
+    case "fixed": {
+      if (!config.fixedRateExchangeAddress)
+        throw new Error("Undefined exchange address - unable to purchase data token.");
+
+      const orderPriceAndFees = await getOrderPriceAndFees(ddo, accessDetails, order.providerFee);
+
+      // this assumes all fees are in ocean
+      await datatoken.approve(
+        order.providerFee?.providerFeeToken,
+        datatokenAddress,
+        await amountToUnits(
+          web3,
+          order.providerFee?.providerFeeToken ?? "0",
+          orderPriceAndFees.price,
+          18, // amountToUnits doesn't need web3 if decimals (18) are specified
+        ),
+        payerAccount
+      );
+
+      const freParams: FreOrderParams = {
+        exchangeContract: config.fixedRateExchangeAddress,
+        exchangeId: accessDetails.addressOrId,
+        maxBaseTokenAmount: orderPriceAndFees.price,
+        baseTokenAddress: order.providerFee?.providerFeeToken,
+        baseTokenDecimals: 18, // TODO: Here we assume 18 decimal token, might not be the case
+        swapMarketFee: "0",
+        marketFeeAddress: "0x0000000000000000000000000000000000000000",
+      };
+
+      const tx = await datatoken.buyFromFreAndOrder(
+        datatokenAddress,
+        payerAccount,
+        orderParams,
+        freParams
+      );
+      return tx.transactionHash;
+    }
+    case "free": {
+      if (!config.dispenserAddress)
+        throw new Error("undefined dispenser address - unable to purchase free data token.");
+
+      // Pay provider fee for running alg
+      await approveProviderFee();
+
+      const tx = await datatoken.buyFromDispenserAndOrder(
+        datatokenAddress,
+        payerAccount,
+        orderParams,
+        config.dispenserAddress
+      );
+      return tx.transactionHash;
+    }
+    default: {
+      throw new Error("Data with unsupported access type");
+    }
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 async function runCompute(dataDid: string, algoDid: string , userAddress: string) {
   const accounts = await window.ethereum.request({
