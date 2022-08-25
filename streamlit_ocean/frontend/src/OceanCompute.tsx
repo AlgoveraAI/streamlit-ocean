@@ -94,6 +94,7 @@ async function handleOrder(
       }
     };
 
+    // Return if order already valid, pay fees if neccessary
     if (order.validOrder) {
       console.log("Order is already valid.");
       if (!order.providerFee) return order.validOrder;
@@ -109,25 +110,6 @@ async function handleOrder(
       return tx.transactionHash;
     }
 
-  // if (order.providerFee && order.providerFee.providerFeeAmount) {
-  //   await approveWei(
-  //     web3,
-  //     payerAccount,
-  //     order.providerFee.providerFeeToken,
-  //     datatokenAddress,
-  //     order.providerFee.providerFeeAmount
-  //   )
-  // }
-  if (order.validOrder) {
-    if (!order.providerFee) return order.validOrder
-    const tx = await datatoken.reuseOrder(
-      datatokenAddress,
-      payerAccount,
-      order.validOrder,
-      order.providerFee
-    )
-    return tx.transactionHash
-  }
   const tx = await datatoken.startOrder(
     datatokenAddress,
     payerAccount,
