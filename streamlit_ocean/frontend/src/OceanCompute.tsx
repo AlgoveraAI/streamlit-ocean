@@ -20,6 +20,7 @@ import {
   ConsumeMarketFee,
   Datatoken,
   FreOrderParams,
+  LoggerInstance,
   OrderParams,
   ProviderComputeInitialize,
   ProviderFees,
@@ -76,14 +77,14 @@ const getTestConfig = async (web3: Web3) => {
  */
  export async function getOrderPriceAndFees(
   asset: AssetExtended,
-  accountId?: string,
+  accountId: string, // previously accountId?
   providerFees?: ProviderFees
 ): Promise<OrderPriceAndFees> {
   const orderPriceAndFee = {
     price: '0',
-    publisherMarketOrderFee: publisherMarketOrderFee || '0',
+    publisherMarketOrderFee: process.env.NEXT_PUBLIC_PUBLISHER_MARKET_ORDER_FEE || '0',
     publisherMarketFixedSwapFee: '0',
-    consumeMarketOrderFee: consumeMarketOrderFee || '0',
+    consumeMarketOrderFee: process.env.NEXT_PUBLIC_CONSUME_MARKET_ORDER_FEE || '0',
     consumeMarketFixedSwapFee: '0',
     providerFee: {
       providerFeeAmount: '0'
@@ -151,7 +152,7 @@ export async function getAccessDetails(
     const tokenPrice: TokenPrice = tokenQueryResult.data.token
     const accessDetails = getAccessDetailsFromTokenPrice(tokenPrice, timeout)
     return accessDetails
-  } catch (error) {
+  } catch (error: any) { // previously without "": any"
     LoggerInstance.error('Error getting access details: ', error.message)
   }
 }
