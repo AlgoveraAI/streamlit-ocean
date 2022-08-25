@@ -124,6 +124,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   const providerUrl = config.providerUri
 
   const computeEnvs = await ProviderInstance.getComputeEnvironments(providerUrl)
+  console.log("Available compute environments", computeEnvs)
   const computeEnv = computeEnvs.find((ce) => ce.priceMin === 0)
   console.log("computeEnv", computeEnv)
 
