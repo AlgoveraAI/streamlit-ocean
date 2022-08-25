@@ -22,6 +22,7 @@ import {
   FreOrderParams,
   OrderParams,
   ProviderComputeInitialize,
+  ProviderFees,
   ProviderInstance,
  } from "@oceanprotocol/lib"
 
@@ -68,7 +69,92 @@ const getTestConfig = async (web3: Web3) => {
   return config
 }
 
+/**
+ * This will be used to get price including fees before ordering
+ * @param {AssetExtended} asset
+ * @return {Promise<OrdePriceAndFee>}
+ */
+ export async function getOrderPriceAndFees(
+  asset: AssetExtended,
+  accountId?: string,
+  providerFees?: ProviderFees
+): Promise<OrderPriceAndFees> {
+  const orderPriceAndFee = {
+    price: '0',
+    publisherMarketOrderFee: publisherMarketOrderFee || '0',
+    publisherMarketFixedSwapFee: '0',
+    consumeMarketOrderFee: consumeMarketOrderFee || '0',
+    consumeMarketFixedSwapFee: '0',
+    providerFee: {
+      providerFeeAmount: '0'
+    },
+    opcFee: '0'
+  } as OrderPriceAndFees
 
+  // fetch provider fee
+  const initializeData =
+    !providerFees &&
+    (await ProviderInstance.initialize(
+      asset?.id,
+      asset?.services[0].id,
+      0,
+      accountId,
+      asset?.services[0].serviceEndpoint
+    ))
+  orderPriceAndFee.providerFee = providerFees || initializeData.providerFee
+
+  // fetch price and swap fees
+  if (asset?.accessDetails?.type === 'fixed') {
+    const fixed = await getFixedBuyPrice(asset?.accessDetails, asset?.chainId)
+    orderPriceAndFee.price = fixed.baseTokenAmount
+    orderPriceAndFee.opcFee = fixed.oceanFeeAmount
+    orderPriceAndFee.publisherMarketFixedSwapFee = fixed.marketFeeAmount
+    orderPriceAndFee.consumeMarketFixedSwapFee = fixed.consumeMarketFeeAmount
+  }
+
+  // calculate full price, we assume that all the values are in ocean, otherwise this will be incorrect
+  orderPriceAndFee.price = new Decimal(+orderPriceAndFee.price || 0)
+    .add(new Decimal(+orderPriceAndFee?.consumeMarketOrderFee || 0))
+    .add(new Decimal(+orderPriceAndFee?.publisherMarketOrderFee || 0))
+    .toString()
+
+  return orderPriceAndFee
+}
+
+/**
+ * @param {number} chainId
+ * @param {string} datatokenAddress
+ * @param {number} timeout timout of the service, this is needed to return order details
+ * @param {string} account account that wants to buy, is needed to return order details
+ * @returns {Promise<AccessDetails>}
+ */
+export async function getAccessDetails(
+  chainId: number,
+  datatokenAddress: string,
+  timeout?: number,
+  account = ''
+): Promise<AccessDetails> {
+  try {
+    const queryContext = getQueryContext(Number(chainId))
+    const tokenQueryResult: OperationResult<
+      TokenPriceQuery,
+      { datatokenId: string; account: string }
+    > = await fetchData(
+      tokenPriceQuery,
+      {
+        datatokenId: datatokenAddress.toLowerCase(),
+        account: account?.toLowerCase()
+      },
+      queryContext
+    )
+
+    const tokenPrice: TokenPrice = tokenQueryResult.data.token
+    const accessDetails = getAccessDetailsFromTokenPrice(tokenPrice, timeout)
+    return accessDetails
+  } catch (error) {
+    LoggerInstance.error('Error getting access details: ', error.message)
+  }
+}
 
 
 // default variables used throughout the script
