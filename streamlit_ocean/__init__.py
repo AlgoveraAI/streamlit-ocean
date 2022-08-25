@@ -140,7 +140,7 @@ def ocean_data(label, did="", key=None, user_address=None, dt_did=None, alg_did=
     """
     Wallet Connect component.
     """
-    return _ocean_data(label=label, did=did, default="not", key=key, user_address=user_address, data_did=dt_did, algo_did=alg_did)
+    return _ocean_data(label=label, did=did, default="", key=key, user_address=user_address, data_did=dt_did, algo_did=alg_did)
 
 
 results = None
@@ -163,6 +163,7 @@ with col1:
 
         if results:
             ocean_data_button = ocean_data(label="ocean", did=results[0][0], user_address=user_address)
+            st.write(ocean_data_button)
 
 with col2:
     st.header("Run Compute to Data")
