@@ -8,7 +8,7 @@ import {
 import React, { ReactNode } from "react"
 
 import { Decimal } from 'decimal.js'
-import { Client, gql } from "urql"
+import { Client, gql, OperationContext, OperationResult, TypedDocumentNode } from "urql"
 import Web3  from "web3"
 
 import {
@@ -172,13 +172,13 @@ async function fetchData(
 
     const response = await client.query(query, variables, context).toPromise()
     return response
-  } catch (error) {
+  } catch (error: any) {
     LoggerInstance.error('Error fetchData: ', error.message)
   }
   return null
 }
 
-function getQueryContext(chainId: number): OperationContext {
+function getQueryContext(chainId: number) {
   try {
     const config: any = getTestConfig(web3)
     const subgraphUri = config.subgraphUri
@@ -187,7 +187,7 @@ function getQueryContext(chainId: number): OperationContext {
       requestPolicy: 'network-only'
     }
     return queryContext
-  } catch (error) {
+  } catch (error: any) {
     LoggerInstance.error('Get query context error: ', error.message)
   }
 }
@@ -204,8 +204,8 @@ async function getFixedBuyPrice(accessDetails: any, chainId: any) {
 }
 
 function getAccessDetailsFromTokenPrice(
-  tokenPrice: TokenPrice | TokensPrice,
-  timeout?: number
+  tokenPrice: any,
+  timeout?: any
 ): AccessDetails {
   const accessDetails = {} as AccessDetails
 
@@ -293,7 +293,7 @@ export async function getOrderPriceAndFees(
   } as OrderPriceAndFees
 
   // fetch provider fee
-  const initializeData =
+  const initializeData: any =
     !providerFees &&
     (await ProviderInstance.initialize(
       asset?.id,
@@ -334,11 +334,11 @@ export async function getAccessDetails(
   datatokenAddress: string,
   timeout?: number,
   account = ''
-): Promise<AccessDetails> {
+): Promise<any> {
   try {
-    const queryContext = getQueryContext(Number(chainId))
+    const queryContext: any = getQueryContext(Number(chainId))
     const tokenQueryResult: OperationResult<
-      TokenPriceQuery,
+      any,
       { datatokenId: string; account: string }
     > = await fetchData(
       tokenPriceQuery,
