@@ -71,6 +71,26 @@ const datatoken = new Datatoken(web3)
   publisherMarketOrderFee: string
 }
 
+/**
+   * @interface OrderPriceAndFee
+   * @prop {string}  price total price including fees
+   * @prop {string}  publisherMarketOrderFee fee received by the market where the asset was published. It is set on erc20 creation. It is a absolute value
+   * @prop {string}  publisherMarketFixedSwapFee fee received by the market where the asset was published on any swap (fre). Absolute value based on the configured percentage
+   * @prop {string}  consumeMarketOrderFee fee received by the market where the asset is ordered. It is set on erc20 creation. It is a absolute value
+   * @prop {string}  consumeMarketFixedSwapFee fee received by the market where the asset is ordered on any swap (fre). Absolute value based on the configured percentage
+   * @prop {ProviderFees} providerFee received from provider
+   * @prop {string}  opcFee ocean protocol community fee, Absolute value based on the configured percentage
+   */
+ interface OrderPriceAndFees {
+  price: string
+  publisherMarketOrderFee: string
+  publisherMarketFixedSwapFee: string
+  consumeMarketOrderFee: string
+  consumeMarketFixedSwapFee: string
+  providerFee: ProviderFees
+  opcFee: string
+}
+
 // helper functions
 const getTestConfig = async (web3: Web3) => {
   const config = new ConfigHelper().getConfig(await web3.eth.getChainId())
@@ -199,7 +219,7 @@ function getAccessDetailsFromTokenPrice(
  */
 export async function getOrderPriceAndFees(
   asset: AssetExtended,
-  accountId: string, // previously accountId?
+  accountId: any, // previously accountId?
   providerFees?: ProviderFees
 ): Promise<OrderPriceAndFees> {
   const orderPriceAndFee = {
