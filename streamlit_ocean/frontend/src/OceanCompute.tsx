@@ -7,6 +7,7 @@ import {
 } from "streamlit-component-lib"
 import React, { ReactNode } from "react"
 
+import { Decimal } from 'decimal.js'
 import Web3  from "web3"
 
 import {
@@ -19,6 +20,7 @@ import {
   ConfigHelper,
   ConsumeMarketFee,
   Datatoken,
+  FixedRateExchange,
   FreOrderParams,
   LoggerInstance,
   OrderParams,
@@ -37,6 +39,11 @@ declare global {
       ethereum: any;
     }
 }
+
+// default variables used throughout the script
+const web3 = new Web3(window.ethereum)
+const datatoken = new Datatoken(web3)
+
 
 /**
    * @interface AccessDetails
@@ -70,12 +77,38 @@ const getTestConfig = async (web3: Web3) => {
   return config
 }
 
+
+function getQueryContext(chainId: number): OperationContext {
+  try {
+    const config: any = getTestConfig(web3)
+    const subgraphUri = config.subgraphUri
+    const queryContext: OperationContext = {
+      url: `${subgraphUri}/subgraphs/name/oceanprotocol/ocean-subgraph`,
+      requestPolicy: 'network-only'
+    }
+    return queryContext
+  } catch (error) {
+    LoggerInstance.error('Get query context error: ', error.message)
+  }
+}
+
+async function getFixedBuyPrice(accessDetails: any, chainId: any) {
+  let config: any = await getTestConfig(web3)
+  const fixed: any = new FixedRateExchange(config.fixedRateExchangeAddress, web3)
+  const estimatedPrice = await fixed.calcBaseInGivenOutDT(
+    accessDetails.addressOrId,
+    '1',
+    process.env.NEXT_PUBLIC_CONSUME_MARKET_FIXED_SWAP_FEE || '0'
+  )
+  return estimatedPrice
+}
+
 /**
  * This will be used to get price including fees before ordering
  * @param {AssetExtended} asset
  * @return {Promise<OrdePriceAndFee>}
  */
- export async function getOrderPriceAndFees(
+export async function getOrderPriceAndFees(
   asset: AssetExtended,
   accountId: string, // previously accountId?
   providerFees?: ProviderFees
@@ -158,9 +191,7 @@ export async function getAccessDetails(
 }
 
 
-// default variables used throughout the script
-const web3 = new Web3(window.ethereum)
-const datatoken = new Datatoken(web3)
+
 
 // core functions for interacting with the Ocean Market
 async function handleOrder(
