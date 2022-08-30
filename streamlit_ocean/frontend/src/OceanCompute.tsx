@@ -8,6 +8,7 @@ import {
 import React, { ReactNode } from "react"
 
 import { Decimal } from 'decimal.js'
+import { Client } from "urql"
 import Web3  from "web3"
 
 import {
@@ -76,7 +77,28 @@ const getTestConfig = async (web3: Web3) => {
   config.providerUri = process.env.PROVIDER_URL || config.providerUri
   return config
 }
+let urqlClient: Client
 
+function getUrqlClientInstance(): Client {
+  return urqlClient
+}
+
+
+async function fetchData(
+  query: TypedDocumentNode,
+  variables: any,
+  context: OperationContext
+): Promise<any> {
+  try {
+    const client = getUrqlClientInstance()
+
+    const response = await client.query(query, variables, context).toPromise()
+    return response
+  } catch (error) {
+    LoggerInstance.error('Error fetchData: ', error.message)
+  }
+  return null
+}
 
 function getQueryContext(chainId: number): OperationContext {
   try {
