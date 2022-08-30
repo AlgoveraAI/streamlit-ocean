@@ -8,7 +8,7 @@ import {
 import React, { ReactNode } from "react"
 
 import { Decimal } from 'decimal.js'
-import { Client } from "urql"
+import { Client, gql } from "urql"
 import Web3  from "web3"
 
 import {
@@ -44,6 +44,64 @@ declare global {
 // default variables used throughout the script
 const web3 = new Web3(window.ethereum)
 const datatoken = new Datatoken(web3)
+
+const tokenPriceQuery = gql`
+  query TokenPriceQuery($datatokenId: ID!, $account: String) {
+    token(id: $datatokenId) {
+      id
+      symbol
+      name
+      publishMarketFeeAddress
+      publishMarketFeeToken
+      publishMarketFeeAmount
+      orders(
+        where: { payer: $account }
+        orderBy: createdTimestamp
+        orderDirection: desc
+      ) {
+        tx
+        serviceIndex
+        createdTimestamp
+        reuses(orderBy: createdTimestamp, orderDirection: desc) {
+          id
+          caller
+          createdTimestamp
+          tx
+          block
+        }
+      }
+      dispensers {
+        id
+        active
+        isMinter
+        maxBalance
+        token {
+          id
+          name
+          symbol
+        }
+      }
+      fixedRateExchanges {
+        id
+        exchangeId
+        price
+        publishMarketSwapFee
+        baseToken {
+          symbol
+          name
+          address
+          decimals
+        }
+        datatoken {
+          symbol
+          name
+          address
+        }
+        active
+      }
+    }
+  }
+`
 
 
 /**
@@ -291,7 +349,7 @@ export async function getAccessDetails(
       queryContext
     )
 
-    const tokenPrice: TokenPrice = tokenQueryResult.data.token
+    const tokenPrice: any = tokenQueryResult.data.token
     const accessDetails = getAccessDetailsFromTokenPrice(tokenPrice, timeout)
     return accessDetails
   } catch (error: any) { // previously without "": any"
