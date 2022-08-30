@@ -8,7 +8,7 @@ import {
 import React, { ReactNode } from "react"
 
 import { Decimal } from 'decimal.js'
-import { Client, gql, OperationContext, OperationResult, TypedDocumentNode } from "urql"
+import { Client, gql, OperationContext, OperationResult, TypedDocumentNode, createClient } from "urql"
 import Web3  from "web3"
 
 import {
@@ -168,9 +168,14 @@ async function fetchData(
   context: OperationContext
 ): Promise<any> {
   try {
-    const client = getUrqlClientInstance()
+    console.log("Fetching data, query is ", query)
+    // const client = getUrqlClientInstance()
+    console.log("Context url is ", context.url)
+    const client = createClient({ url: context.url })
+    console.log("Intialized client is ", client)
 
     const response = await client.query(query, variables, context).toPromise()
+    console.log("Response is ", response)
     return response
   } catch (error: any) {
     LoggerInstance.error('Error fetchData: ', error.message)
@@ -178,14 +183,15 @@ async function fetchData(
   return null
 }
 
-function getQueryContext(chainId: number) {
+async function getQueryContext(chainId: number) {
   try {
-    const config: any = getTestConfig(web3)
+    const config: any = await getTestConfig(web3)
     const subgraphUri = config.subgraphUri
     const queryContext: OperationContext = {
       url: `${subgraphUri}/subgraphs/name/oceanprotocol/ocean-subgraph`,
       requestPolicy: 'network-only'
     }
+    console.log("Query context is ", queryContext)
     return queryContext
   } catch (error: any) {
     LoggerInstance.error('Get query context error: ', error.message)
@@ -336,7 +342,8 @@ export async function getAccessDetails(
   account = ''
 ): Promise<any> {
   try {
-    const queryContext: any = getQueryContext(Number(chainId))
+    console.log("Getting AccessDetails")
+    const queryContext: any = await getQueryContext(Number(chainId))
     const tokenQueryResult: OperationResult<
       any,
       { datatokenId: string; account: string }
