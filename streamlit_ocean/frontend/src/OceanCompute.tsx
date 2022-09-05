@@ -220,7 +220,8 @@ function getAccessDetailsFromTokenPrice(
     tokenPrice?.dispensers?.length === 0 &&
     tokenPrice?.fixedRateExchanges?.length === 0
   ) {
-    accessDetails.type = 'NOT_SUPPORTED'
+    accessDetails.type = 'free' // 'NOT_SUPPORTED'
+    console.log('No supported pricing schema found.')
     return accessDetails
   }
 
@@ -384,6 +385,8 @@ async function handleOrder(
      - no validOrder -> we need to call startOrder, to pay 1 DT & providerFees
   */
     const approveProviderFee = async () => {
+      console.log("Approving provider fee")
+      console.log("provider fee", order.providerFee)
       // Approve provider fees if exists
       if (order.providerFee && order.providerFee.providerFeeAmount) {
         await datatoken.approve(
@@ -392,6 +395,17 @@ async function handleOrder(
           order.providerFee.providerFeeAmount,
           payerAccount
         );
+        const config = await getTestConfig(web3)
+
+        await approveWei(
+          web3,
+          config,
+          payerAccount,
+          order.providerFee.providerFeeToken,
+          payerAccount,
+          order.providerFee.providerFeeAmount,
+          // datatokenAddress,
+        )
       }
     };
 
@@ -416,6 +430,7 @@ async function handleOrder(
     console.log("Datatoken balance", tokenBalance);
 
   if (Number(tokenBalance) >= 1) {
+    console.log("User already owns the tokens, approving provider fee and starting order");
     await approveProviderFee();
     const tx = await datatoken.startOrder(
       datatokenAddress,
@@ -427,7 +442,15 @@ async function handleOrder(
     )
     return tx.transactionHash
   }
-
+  // testing logs
+  console.log("ddo", ddo)
+  console.log("datatokenAddress", datatokenAddress)
+  console.log("payerAccount", payerAccount)
+  console.log("consumerAccount", consumerAccount)
+  console.log("serviceIndex", serviceIndex)
+  console.log("order", order)
+  console.log("consumeMarkerFee", consumeMarkerFee)
+  // end testing logs
   return await buyAndOrder(
     ddo,
     order,
@@ -458,20 +481,28 @@ const buyAndOrder = async (
     consumer: consumerAccount,
     serviceIndex: serviceIndex,
     _providerFee: order.providerFee,
-    _consumeMarketFee: consumeMarkerFee ?? {
+    _consumeMarketFee:  { //consumeMarkerFee ??
       consumeMarketFeeAddress: "0x0000000000000000000000000000000000000000",
       consumeMarketFeeToken: order.providerFee.providerFeeToken,
       consumeMarketFeeAmount: "0",
     },
   };
-
-  const accessDetails = ddo.accessDetails ?? await getAccessDetails(
+  console.log("ddo.accessDetails", ddo.accessDetails);
+  let accessDetails = ddo.accessDetails ?? await getAccessDetails(
     ddo.chainId,
     datatokenAddress,
     3600, // TODO: valid until
     payerAccount,
   );
   console.log("accessDetails", accessDetails);
+
+  // temporary until subgraph works again
+  if (accessDetails == undefined) {
+    accessDetails = {}
+    accessDetails.type = 'free'
+    // accessDetails.type = 'fixed'
+    console.log("got here")
+  }
   const config: any = await getTestConfig(web3)
 
   switch (accessDetails?.type) {
@@ -481,6 +512,7 @@ const buyAndOrder = async (
         throw new Error("Undefined exchange address - unable to purchase data token.");
 
       const orderPriceAndFees = await getOrderPriceAndFees(ddo, accessDetails, order.providerFee);
+      console.log("pricing is fixed")
 
       // this assumes all fees are in ocean
       await datatoken.approve(
@@ -541,7 +573,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
     method: 'eth_requestAccounts',
   });
   console.log("accounts", accounts)
-  const consumerAccount = accounts[0]
+  const payerAccount = accounts[0]
 
   const config: any = await getTestConfig(web3)
   console.log("config", config)
@@ -587,7 +619,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
     computeEnv.id,
     computeValidUntil,
     providerUrl,
-    consumerAccount
+    payerAccount
   )
   console.log("providerInitializeComputeResults", providerInitializeComputeResults)
   console.log("Handling order for algorithm")
@@ -595,7 +627,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
     resolvedAlgoDdoWith1mTimeout,
     providerInitializeComputeResults.algorithm,
     resolvedAlgoDdoWith1mTimeout.services[0].datatokenAddress,
-    consumerAccount,
+    payerAccount,
     computeEnv.consumerAddress,
     0
   )
@@ -609,7 +641,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
       resolvedDdoWith1mTimeout,
       providerInitializeComputeResults.datasets[i],
       dtAddressArray[i],
-      consumerAccount,
+      payerAccount,
       computeEnv.consumerAddress,
       0
     )
@@ -624,7 +656,7 @@ async function runCompute(dataDid: string, algoDid: string , userAddress: string
   const computeJobs: any = await ProviderInstance.computeStart(
       providerUrl,
       web3,
-      consumerAccount,
+      payerAccount,
       computeEnv.id,
       assets[0],
       algo,
